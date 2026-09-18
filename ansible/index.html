@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ansible Field Notes</title>
+<meta name="description" content="The Ansible commands, flags, playbook patterns and tricks worth keeping within reach.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F4F7F4; --surface:#FFFFFF; --ink:#18221D; --muted:#5A6A61; --line:#D7DFD9; --chip:#E8EEEA;
+  --accent:#B8321C; --accent-soft:#F6E4E0;
+  --term-bg:#121B16; --term-ink:#E4ECE6; --term-line:#263429; --term-muted:#7E8F85;
+  --ok:#57B876; --changed:#E0AB45; --failed:#E86553; --skipped:#55BBCB; --unreach:#C97BDA; --rescued:#7C8FE0;
+  --shadow:0 1px 2px rgba(20,30,25,.06),0 6px 20px -12px rgba(20,30,25,.25);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1512; --surface:#151E19; --ink:#E4ECE6; --muted:#93A399; --line:#253129; --chip:#1D2822;
+    --accent:#F2705A; --accent-soft:#3A1F19;
+    --term-bg:#0A100D; --term-ink:#E4ECE6; --term-line:#1E2A22; --term-muted:#6F8076;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px -12px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1512; --surface:#151E19; --ink:#E4ECE6; --muted:#93A399; --line:#253129; --chip:#1D2822;
+  --accent:#F2705A; --accent-soft:#3A1F19;
+  --term-bg:#0A100D; --term-ink:#E4ECE6; --term-line:#1E2A22; --term-muted:#6F8076;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px -12px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+code,pre,kbd{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1240px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;text-decoration:none}
+.brand h1{margin:0;font:600 22px/1 "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;letter-spacing:-.01em}
+.brand .sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.search{position:relative;flex:1 1 260px;max-width:460px}
+.search input{width:100%;height:38px;padding:0 74px 0 36px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.search input::placeholder{color:var(--muted)}
+.search svg{position:absolute;left:11px;top:11px;width:16px;height:16px;color:var(--muted);pointer-events:none}
+.search kbd{position:absolute;right:10px;top:9px;font-size:11px;padding:2px 6px;border:1px solid var(--line);border-radius:4px;color:var(--muted);background:var(--chip)}
+.search .count{position:absolute;right:10px;top:10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;display:none}
+.search.active kbd{display:none}.search.active .count{display:block}
+.theme{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+
+/* layout */
+.wrap{max-width:1240px;margin:0 auto;padding:24px 20px 80px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:32px;align-items:start}
+nav.toc{position:sticky;top:calc(76px + env(safe-area-inset-top,0px));font-size:13px}
+nav.toc .label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px 10px}
+nav.toc a{display:block;padding:5px 10px;border-radius:6px;color:var(--muted);text-decoration:none;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--ink);background:var(--chip)}
+nav.toc a.on{color:var(--ink);border-left-color:var(--accent);background:var(--chip)}
+nav.toc a .n{display:inline-block;min-width:22px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+
+main{min-width:0}
+/* intro */
+.intro{margin:0 0 28px;max-width:70ch;min-width:0}
+.intro h2{font:600 34px/1.1 "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;margin:0 0 10px;text-wrap:balance;letter-spacing:-.01em}
+.intro p{margin:0;color:var(--muted);font-size:16px}
+.recap{margin:18px 0 0;padding:12px 14px;background:var(--term-bg);color:var(--term-ink);border-radius:8px;font-size:13px;line-height:1.6;overflow-x:auto}
+.recap b{font-weight:500}
+.recap .h{color:var(--term-muted)}
+.ok{color:var(--ok)}.changed{color:var(--changed)}.failed{color:var(--failed)}.skipped{color:var(--skipped)}.unreach{color:var(--unreach)}.rescued{color:var(--rescued)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0;padding:0;list-style:none;font-size:13px;color:var(--muted)}
+.legend li::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;background:var(--c);vertical-align:1px}
+
+/* sections */
+section{margin:0 0 40px;scroll-margin-top:84px}
+section>header{display:flex;align-items:baseline;gap:12px;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+section h2{margin:0;font:600 22px/1.2 "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif}
+section header p{margin:0;color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px}
+.cmd{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.cmd.wide{grid-column:1/-1}
+.cmd pre{margin:0;padding:12px 14px;background:var(--term-bg);color:var(--term-ink);font-size:13px;line-height:1.55;overflow-x:auto;position:relative;flex:0 0 auto;tab-size:2}
+.cmd pre code{white-space:pre;display:inline-block;min-width:100%;padding-right:36px;box-sizing:border-box}
+.cmd .body{padding:10px 14px 12px}
+.cmd .body p{margin:0}
+.cmd .body p+p{margin-top:6px}
+.cmd .tip{color:var(--muted);font-size:13.5px}
+.cmd .tip b{color:var(--ink);font-weight:600}
+.cmd .body code{font-size:12.5px;background:var(--chip);padding:1px 5px;border-radius:4px}
+.cmd .body pre{margin:8px 0 0;padding:8px 10px;border-radius:6px;font-size:12.5px}
+.cmd .body pre code{background:none;padding:0;font-size:inherit}
+.copy{position:absolute;top:8px;right:8px;width:28px;height:28px;border:1px solid var(--term-line);border-radius:6px;background:var(--term-bg);color:var(--term-muted);cursor:pointer;display:grid;place-items:center;padding:0}
+.copy:hover{color:var(--term-ink);border-color:var(--term-muted)}
+.copy.done{color:var(--ok);border-color:var(--ok)}
+.copy svg{width:14px;height:14px}
+/* syntax */
+.c{color:var(--term-muted)}
+.f{color:var(--changed)}
+.k{color:var(--skipped)}
+.s{color:var(--ok)}
+.j{color:var(--rescued)}
+.pr{color:var(--term-muted)}
+.hd{color:var(--unreach)}
+
+.empty{display:none;padding:40px 0;color:var(--muted);text-align:center}
+.empty.show{display:block}
+.pattern{width:100%;border-collapse:collapse;font-size:13.5px}
+.pattern td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}
+.pattern td:first-child{white-space:nowrap}
+.pattern code{background:var(--chip);padding:1px 5px;border-radius:4px;font-size:12.5px}
+.tblwrap{overflow-x:auto}
+footer{max-width:1240px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:13px}
+
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);gap:16px}
+  nav.toc{position:static;display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  nav.toc .label{display:none}
+  nav.toc a{white-space:nowrap;border:1px solid var(--line);border-left-width:1px;border-radius:999px;padding:5px 12px}
+  nav.toc a.on{border-color:var(--accent)}
+  nav.toc a .n{display:none}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .intro h2{font-size:28px}
+}
+@media (max-width:480px){
+  .top-inner{padding:10px 16px}
+  .wrap,footer{padding-left:16px;padding-right:16px}
+  .brand .sub{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-inner">
+    <a class="brand" href="#top"><h1>Ansible Field Notes</h1><span class="sub">commands · flags · tricks</span></a>
+    <div class="search" id="searchwrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Filter: vault, --limit, serial, json_query…" autocomplete="off" spellcheck="false" aria-label="Filter commands">
+      <kbd>/</kbd><span class="count" id="count"></span>
+    </div>
+    <button class="theme" id="theme" type="button" aria-label="Toggle theme">Theme</button>
+  </div>
+</div>
+
+<div class="wrap" id="top">
+<nav class="toc" aria-label="Sections">
+  <p class="label">Sections</p>
+  <a href="#inventory"><span class="n">01</span>Inventory &amp; reach</a>
+  <a href="#adhoc"><span class="n">02</span>Ad-hoc commands</a>
+  <a href="#playbook"><span class="n">03</span>Running playbooks</a>
+  <a href="#debug"><span class="n">04</span>Debugging</a>
+  <a href="#vault"><span class="n">05</span>Vault</a>
+  <a href="#galaxy"><span class="n">06</span>Galaxy &amp; collections</a>
+  <a href="#docs"><span class="n">07</span>Docs, lint, config</a>
+  <a href="#patterns"><span class="n">08</span>Playbook patterns</a>
+  <a href="#perf"><span class="n">09</span>Speed</a>
+  <a href="#jinja"><span class="n">10</span>Filters &amp; Jinja</a>
+  <a href="#cfg"><span class="n">11</span>ansible.cfg starter</a>
+</nav>
+
+<main>
+<div class="intro">
+  <h2>The commands you reach for at 2 a.m., and the tricks that keep you from needing them.</h2>
+  <p>Everything below targets ansible-core 2.15+ with fully-qualified module names. Type <kbd>/</kbd> to filter; every block has a copy button.</p>
+  <pre class="recap"><span class="h">PLAY RECAP *********************************************************************</span>
+web1   : <b class="ok">ok=14</b>  <b class="changed">changed=3</b>  <b class="unreach">unreachable=0</b>  <b class="failed">failed=0</b>  <b class="skipped">skipped=2</b>  <b class="rescued">rescued=0</b>  ignored=0
+db1    : <b class="ok">ok=9</b>   <b class="changed">changed=0</b>  <b class="unreach">unreachable=0</b>  <b class="failed">failed=1</b>  <b class="skipped">skipped=0</b>  <b class="rescued">rescued=1</b>  ignored=0</pre>
+  <ul class="legend">
+    <li style="--c:var(--ok)">ok — ran, nothing to change</li>
+    <li style="--c:var(--changed)">changed — state was modified</li>
+    <li style="--c:var(--failed)">failed — task errored and stopped the host</li>
+    <li style="--c:var(--unreach)">unreachable — SSH / connection never worked</li>
+    <li style="--c:var(--skipped)">skipped — <code>when</code> was false</li>
+    <li style="--c:var(--rescued)">rescued — a <code>rescue:</code> block caught it</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<section id="inventory">
+<header><h2>01 · Inventory &amp; reach</h2><p>Can I see my hosts, and can I talk to them?</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible all -m ping</code></pre>
+<div class="body"><p>Confirms SSH login <em>and</em> a working Python on every host. Not ICMP.</p><p class="tip"><b>Tip:</b> <code>-o</code> gives one line per host, easier to scan across fleets.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -i inventory/prod.ini -m ping -u deploy -k -K</code></pre>
+<div class="body"><p>Explicit inventory, remote user, prompt for SSH password (<code>-k</code>) and sudo password (<code>-K</code>).</p></div></article>
+
+<article class="cmd"><pre><code>ansible-inventory --graph
+ansible-inventory --list -y
+ansible-inventory --host web1</code></pre>
+<div class="body"><p>Tree view of groups, full merged inventory as YAML, or every variable that applies to one host.</p><p class="tip"><b>Tip:</b> <code>--graph --vars</code> prints variables in the tree, which is the fastest way to see where a value comes from.</p></div></article>
+
+<article class="cmd"><pre><code>ansible 'web*:&amp;prod:!canary' --list-hosts</code></pre>
+<div class="body"><p>Dry-run a host pattern before using it in <code>--limit</code>. Nothing runs.</p></div></article>
+
+<article class="cmd wide"><div class="tblwrap"><table class="pattern">
+<tr><td><code>all</code> / <code>*</code></td><td>every host</td><td><code>web:db</code></td><td>union of two groups</td></tr>
+<tr><td><code>web:&amp;prod</code></td><td>in <b>both</b> web and prod</td><td><code>web:!staging</code></td><td>web, excluding staging</td></tr>
+<tr><td><code>web[0]</code></td><td>first host in group</td><td><code>web[0:2]</code></td><td>first three hosts (slice is inclusive)</td></tr>
+<tr><td><code>web[-1]</code></td><td>last host in group</td><td><code>~web\d+\.eu</code></td><td>regex, leading <code>~</code></td></tr>
+<tr><td><code>--limit @hosts.txt</code></td><td>hosts listed in a file, one per line</td><td><code>10.0.1.*</code></td><td>IP glob works too</td></tr>
+</table></div></article>
+
+<article class="cmd"><pre><code>ansible all -m ansible.builtin.setup -a 'filter=ansible_distribution*'</code></pre>
+<div class="body"><p>Gather facts with a glob filter. Drop the filter for the full dump (large).</p><p class="tip"><b>Tip:</b> <code>-a 'gather_subset=network'</code> or <code>'gather_subset=!all,!min,hardware'</code> limits what is collected.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -m setup --tree /tmp/facts</code></pre>
+<div class="body"><p>Write one JSON fact file per host. Grep the directory instead of re-gathering.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-inventory -i aws_ec2.yml --graph
+ansible-inventory -i inventory/ --list --yaml --output merged.yml</code></pre>
+<div class="body"><p>Dynamic inventory plugins (AWS, GCP, Azure, Proxmox, …) take a YAML file ending in the plugin name. Pass a directory to merge everything inside it.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -m ping -e 'ansible_python_interpreter=/usr/bin/python3'</code></pre>
+<div class="body"><p>Fixes "module failure: /usr/bin/python: not found" on hosts with only python3. Set <code>interpreter_python = auto_silent</code> in <code>ansible.cfg</code> to stop the warning for good.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="adhoc">
+<header><h2>02 · Ad-hoc commands</h2><p>One module, many hosts, no playbook.</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible web -a 'uptime'
+ansible web -m shell -a 'ss -tlnp | grep :443'</code></pre>
+<div class="body"><p>No <code>-m</code> means <code>command</code>: no shell, so no pipes, globs or redirects. Use <code>shell</code> when you need them.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -b -m apt -a 'name=nginx state=present update_cache=yes'
+ansible all -b -m dnf -a 'name=* state=latest'</code></pre>
+<div class="body"><p><code>-b</code> is <code>--become</code> (sudo). Module args are <code>key=value</code> pairs.</p><p class="tip"><b>Tip:</b> <code>-m package</code> picks apt/dnf/etc. automatically per host.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -b -m service -a 'name=nginx state=restarted'
+ansible all -b -m systemd -a 'name=nginx enabled=yes daemon_reload=yes'</code></pre>
+<div class="body"><p>Restart, enable, reload units across the fleet.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -b -m copy -a 'src=./motd dest=/etc/motd mode=0644 backup=yes'</code></pre>
+<div class="body"><p>Push one file everywhere. <code>backup=yes</code> keeps a timestamped copy of the old one.</p><p class="tip"><b>Tip:</b> <code>-a 'content="hello\n" dest=/tmp/x'</code> writes inline content with no source file.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -m fetch -a 'src=/var/log/nginx/error.log dest=logs/'</code></pre>
+<div class="body"><p>Pull a file from every host into <code>logs/&lt;hostname&gt;/var/log/nginx/error.log</code>. Add <code>flat=yes</code> to skip the path nesting.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -b -m user -a 'name=deploy groups=sudo append=yes shell=/bin/bash'
+ansible all -b -m authorized_key -a "user=deploy key='{{ lookup('file', '~/.ssh/id_ed25519.pub') }}'"</code></pre>
+<div class="body"><p>Bootstrap a user and drop your key in one go.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -b -m reboot -a 'reboot_timeout=600'</code></pre>
+<div class="body"><p>Reboots and waits for SSH to come back. Far more reliable than <code>shell: reboot</code>.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -m debug -a 'var=hostvars[inventory_hostname]'
+ansible all -m debug -a 'msg={{ ansible_host }}:{{ ansible_port | default(22) }}'</code></pre>
+<div class="body"><p>Print any variable as each host sees it, no playbook required.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -a 'df -h /' -f 50 --one-line</code></pre>
+<div class="body"><p><code>-f</code> raises parallel forks (default 5). <code>--one-line</code> makes output grep-able.</p></div></article>
+
+<article class="cmd"><pre><code>ansible localhost -m debug -a "msg={{ lookup('env', 'HOME') }}"
+ansible localhost -m debug -a "msg={{ '10.0.0.0/24' | ansible.utils.ipaddr('net') }}"</code></pre>
+<div class="body"><p>Use <code>localhost</code> as a Jinja scratchpad to test filters and lookups before putting them in a template.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-console web -b</code></pre>
+<div class="body"><p>Interactive REPL: type <code>apt name=htop</code> or <code>shell uptime</code> against the chosen pattern with tab completion. <code>cd db</code> switches hosts, <code>forks 20</code> tweaks parallelism.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="playbook">
+<header><h2>03 · Running playbooks</h2><p>The flags that matter on the <code>ansible-playbook</code> line.</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --check --diff</code></pre>
+<div class="body"><p>Dry run and show what <em>would</em> change, file diffs included. The single most valuable flag pair in Ansible.</p><p class="tip"><b>Tip:</b> tasks with <code>check_mode: false</code> still run for real in <code>--check</code>; use that for read-only commands whose output later tasks need.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -l 'web*:&amp;prod'
+ansible-playbook site.yml -l web1,web2
+ansible-playbook site.yml -l @failed_hosts.txt</code></pre>
+<div class="body"><p><code>--limit</code> narrows the play's hosts. Always pair it with <code>--list-hosts</code> first when the pattern is clever.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --list-tasks
+ansible-playbook site.yml --list-tags
+ansible-playbook site.yml --list-hosts</code></pre>
+<div class="body"><p>Inspect without executing. <code>--list-tasks</code> also prints each task's tags.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -t deploy,restart
+ansible-playbook site.yml --skip-tags slow,packages</code></pre>
+<div class="body"><p>Run or skip by tag. <code>tags: always</code> tasks run regardless, <code>tags: never</code> only run when asked explicitly.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --start-at-task 'Restart nginx'</code></pre>
+<div class="body"><p>Resume a long run at the task name. Facts and <code>register</code>ed variables from earlier tasks will be missing, so it works best with idempotent plays.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --step</code></pre>
+<div class="body"><p>Prompt before every task: <kbd>y</kbd> run, <kbd>n</kbd> skip, <kbd>c</kbd> continue without asking. Great for the first run on prod.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -e 'version=1.4.2 force=true'
+ansible-playbook site.yml -e @vars/prod.yml
+ansible-playbook site.yml -e '{"pkgs": ["git", "jq"]}'</code></pre>
+<div class="body"><p><code>--extra-vars</code> beats every other variable source. Use <code>@file</code> for YAML/JSON, or inline JSON for lists and dicts.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -u deploy -b --become-user=postgres -K</code></pre>
+<div class="body"><p>SSH as one user, escalate to another. <code>-K</code> asks for the sudo password once.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --syntax-check</code></pre>
+<div class="body"><p>YAML and play structure only; it will not catch bad module args. Put it in CI next to <code>ansible-lint</code>.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --flush-cache</code></pre>
+<div class="body"><p>Discard cached facts so <code>gathering = smart</code> re-collects them. The fix for "but I changed the hostname yesterday".</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --force-handlers</code></pre>
+<div class="body"><p>Run notified handlers even when a later task fails. Without it, a failure in the middle means your restart never happens.</p></div></article>
+
+<article class="cmd"><pre><code>ANSIBLE_CALLBACK_RESULT_FORMAT=yaml ansible-playbook site.yml
+ANSIBLE_CALLBACKS_ENABLED=timer,profile_tasks ansible-playbook site.yml</code></pre>
+<div class="body"><p>YAML-formatted task results are far more readable than the JSON default. <code>profile_tasks</code> prints the slowest tasks at the end.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -i localhost, -c local</code></pre>
+<div class="body"><p>Run a playbook against the machine you're on. The trailing comma makes the argument an inline host list instead of a file name.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-pull -U https://github.com/org/infra.git -C main -i localhost, local.yml</code></pre>
+<div class="body"><p>Inverts the model: each node clones the repo and applies itself. Pair with a cron entry or systemd timer for cheap continuous config.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml 2&gt;&amp;1 | tee "runs/$(date +%F_%H%M).log"</code></pre>
+<div class="body"><p>Keep a record of every prod run. Set <code>log_path</code> in <code>ansible.cfg</code> for the same thing without remembering to do it.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="debug">
+<header><h2>04 · Debugging</h2><p>When the recap is red.</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -v      <span class="c"># show task results</span>
+ansible-playbook site.yml -vvv    <span class="c"># + SSH commands, module args</span>
+ansible-playbook site.yml -vvvv   <span class="c"># + connection-plugin debug</span></code></pre>
+<div class="body"><p>Start at <code>-v</code>; jump to <code>-vvv</code> for "why is it connecting like that". <code>-vvvv</code> is for SSH and become problems.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">- name: Read the service status
+  ansible.builtin.command: systemctl is-active nginx
+  register: nginx_state
+  changed_when: false
+  failed_when: nginx_state.rc not in [0, 3]
+
+- ansible.builtin.debug:
+    var: nginx_state
+    verbosity: 1          <span class="c"># only prints with -v or higher</span></code></pre>
+<div class="body"><p>The canonical debug loop: <code>register</code> the result, decide what "failed" and "changed" mean yourself, print it at a verbosity level so it stays quiet in normal runs.</p></div></article>
+
+<article class="cmd"><pre><code>ANSIBLE_KEEP_REMOTE_FILES=1 ansible-playbook site.yml -vvv -l web1</code></pre>
+<div class="body"><p>Leaves the generated module scripts in <code>~/.ansible/tmp/</code> on the host. Run them by hand with <code>python3 AnsiballZ_*.py explode</code> then <code>execute</code> to see the real traceback.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">- hosts: web
+  strategy: ansible.builtin.debug   <span class="c"># or: debugger: on_failed  (per play/task)</span>
+  tasks:
+    - ansible.builtin.template:
+        src: app.conf.j2
+        dest: /etc/app.conf</code></pre>
+<div class="body"><p>Drops into an interactive debugger on failure. Inside it: <code>p task.args</code>, <code>p result._result</code>, <code>p host</code>, <code>task.args['dest'] = '/tmp/x'</code>, <code>redo</code>, <code>continue</code>, <code>quit</code>.</p></div></article>
+
+<article class="cmd"><pre><code>ansible web1 -m ansible.builtin.setup -a 'filter=ansible_default_ipv4'
+ansible-inventory --host web1 | jq .ansible_host</code></pre>
+<div class="body"><p>Two ways to answer "what does Ansible think this host is".</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -l web1 -t debugme</code></pre>
+<div class="body"><p>Tag a diagnostic task <code>[never, debugme]</code>. It is invisible in normal runs and appears only when you ask.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">- ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+      - ansible_facts['distribution_major_version'] | int &gt;= 22
+      - db_password is defined
+    fail_msg: "This role needs Ubuntu 22.04+ and db_password"
+    quiet: true</code></pre>
+<div class="body"><p>Fail early with a message you wrote, not a Jinja traceback three roles later.</p></div></article>
+
+<article class="cmd"><pre><code>ANSIBLE_DEBUG=1 ansible-playbook site.yml 2&gt;debug.log</code></pre>
+<div class="body"><p>Internal engine logging: variable precedence, plugin loading, inventory parsing. Enormous output. Last resort.</p></div></article>
+
+<article class="cmd"><pre><code>ansible all -m ping -vvv 2&gt;&amp;1 | grep -E 'ESTABLISH|ssh -'</code></pre>
+<div class="body"><p>Shows the exact SSH command line Ansible builds, including key, user, port and <code>ssh_args</code>. Copy-paste it to reproduce the connection problem outside Ansible.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -e 'ansible_ssh_common_args="-o ProxyJump=bastion.example.com"'</code></pre>
+<div class="body"><p>Reach hosts through a jump box for one run. Put it in <code>group_vars</code> to make it permanent.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="vault">
+<header><h2>05 · Vault</h2><p>Secrets in git without the guilt.</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible-vault create group_vars/prod/vault.yml
+ansible-vault edit   group_vars/prod/vault.yml
+ansible-vault view   group_vars/prod/vault.yml</code></pre>
+<div class="body"><p>Create, edit (in <code>$EDITOR</code>) or print an encrypted file. Keep vaulted vars in a separate <code>vault.yml</code> so <code>git grep</code> still finds the names.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-vault encrypt secrets.yml certs/*.key
+ansible-vault decrypt secrets.yml
+ansible-vault rekey   secrets.yml</code></pre>
+<div class="body"><p>Encrypt existing files in place, decrypt for good, or change the password.</p></div></article>
+
+<article class="cmd wide"><pre><code>ansible-vault encrypt_string --vault-id prod@prompt --name 'db_password' 'S3cr3t!'</code></pre>
+<div class="body"><p>Emits a <code>!vault |</code> block you paste straight into a plain YAML file. Only that value is encrypted; the rest of the file stays diffable.</p><p class="tip"><b>Tip:</b> <code>echo -n 'S3cr3t!' | ansible-vault encrypt_string --stdin-name db_password</code> keeps the secret out of shell history.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml --ask-vault-pass
+ansible-playbook site.yml --vault-password-file ~/.vault_pass.txt
+ansible-playbook site.yml --vault-id prod@~/.vault_prod --vault-id dev@prompt</code></pre>
+<div class="body"><p>Supply one or many vault passwords. <code>vault_password_file</code> in <code>ansible.cfg</code> removes the flag entirely.</p><p class="tip"><b>Tip:</b> if the password file is executable, Ansible runs it and reads stdout, so it can pull from a password manager or a cloud secret store.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-vault view --vault-id prod@~/.vault_prod group_vars/prod/vault.yml | grep -i api</code></pre>
+<div class="body"><p>Search inside a vault without decrypting to disk.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml"><span class="c"># group_vars/prod/vars.yml   (plain, greppable)</span>
+db_password: "{{ vault_db_password }}"
+
+<span class="c"># group_vars/prod/vault.yml  (encrypted)</span>
+vault_db_password: hunter2</code></pre>
+<div class="body"><p>The indirection pattern: real names in plain text, values in the vault, prefixed <code>vault_</code>. Add <code>no_log: true</code> to any task that touches them.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="galaxy">
+<header><h2>06 · Galaxy &amp; collections</h2><p>Dependencies, pinned and reproducible.</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible-galaxy collection install community.general
+ansible-galaxy collection install 'community.general:&gt;=8.0.0,&lt;9'
+ansible-galaxy collection install community.general --upgrade</code></pre>
+<div class="body"><p>Install, pin or bump a collection. Namespaced modules like <code>community.general.ufw</code> come from these.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml"><span class="c"># requirements.yml</span>
+collections:
+  - name: community.general
+    version: "&gt;=8.0.0,&lt;9.0.0"
+  - name: https://github.com/org/private-collection.git
+    type: git
+    version: main
+roles:
+  - name: geerlingguy.docker
+    version: 7.1.0</code></pre>
+<div class="body"><p>One file for both. Install it with:</p><pre><code>ansible-galaxy install -r requirements.yml
+ansible-galaxy collection install -r requirements.yml --force</code></pre></div></article>
+
+<article class="cmd"><pre><code>ansible-galaxy collection list
+ansible-galaxy collection list community.general
+ansible-galaxy role list</code></pre>
+<div class="body"><p>What's installed and where. Handy when a module "doesn't exist" on the CI runner.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-galaxy role init roles/nginx
+ansible-galaxy collection init myorg.tools</code></pre>
+<div class="body"><p>Scaffold the standard directory layout so you never argue about it.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-galaxy collection install -p ./collections -r requirements.yml</code></pre>
+<div class="body"><p>Install into the project instead of <code>~/.ansible</code>. Set <code>collections_path = ./collections</code> in <code>ansible.cfg</code> and commit the lock.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-galaxy collection build
+ansible-galaxy collection publish myorg-tools-1.0.0.tar.gz --api-key "$GALAXY_TOKEN"</code></pre>
+<div class="body"><p>Package and publish your own collection to Galaxy or a private Automation Hub.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="docs">
+<header><h2>07 · Docs, lint, config</h2><p>Offline reference and the tooling around it.</p></header>
+<div class="grid">
+
+<article class="cmd"><pre><code>ansible-doc ansible.builtin.copy
+ansible-doc -s ansible.builtin.copy   <span class="c"># snippet you can paste</span>
+ansible-doc -l | grep -i docker</code></pre>
+<div class="body"><p>Full docs with examples, or a ready-to-fill task snippet. No internet needed.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-doc -t lookup -l
+ansible-doc -t filter ansible.builtin.regex_replace
+ansible-doc -t connection ssh
+ansible-doc -t callback -l</code></pre>
+<div class="body"><p><code>-t</code> switches the plugin type: lookup, filter, test, inventory, connection, become, callback, strategy…</p></div></article>
+
+<article class="cmd"><pre><code>ansible-config dump --only-changed
+ansible-config view
+ansible-config list | less</code></pre>
+<div class="body"><p>See what's different from defaults and which file it came from. Kills the "which ansible.cfg is it reading" question.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-config init --disabled -t all &gt; ansible.cfg</code></pre>
+<div class="body"><p>Generate a fully commented <code>ansible.cfg</code> with every option present but disabled. Uncomment what you need.</p></div></article>
+
+<article class="cmd"><pre><code>ansible --version
+ansible-galaxy collection list 2&gt;/dev/null | head</code></pre>
+<div class="body"><p>Shows config file in use, python version, and collection paths. The first thing to paste into a bug report.</p></div></article>
+
+<article class="cmd"><pre><code>pipx install --include-deps ansible
+pipx inject ansible ansible-lint
+pipx upgrade-all</code></pre>
+<div class="body"><p>Clean install away from system Python. <code>pipx inject</code> adds tools into the same venv so they share collections.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-lint site.yml
+ansible-lint --fix
+ansible-lint --profile production</code></pre>
+<div class="body"><p>Catches non-FQCN modules, missing names, risky <code>shell</code> use, and more. <code>--fix</code> auto-rewrites the safe ones.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml"><span class="c"># .pre-commit-config.yaml</span>
+repos:
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v24.9.2
+    hooks:
+      - id: ansible-lint</code></pre>
+<div class="body"><p>Lint on every commit. Add <code>--syntax-check</code> in CI for the playbooks the linter doesn't own.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="patterns">
+<header><h2>08 · Playbook patterns</h2><p>YAML that reads well in six months.</p></header>
+<div class="grid">
+
+<article class="cmd wide"><pre><code class="yaml">- name: Deploy with rollback
+  block:
+    - ansible.builtin.git:
+        repo: "{{ app_repo }}"
+        dest: /srv/app
+        version: "{{ app_version }}"
+      notify: restart app
+    - ansible.builtin.command: /srv/app/bin/migrate
+      changed_when: "'applied' in migrate.stdout"
+      register: migrate
+  rescue:
+    - ansible.builtin.command: /srv/app/bin/rollback
+    - ansible.builtin.fail:
+        msg: "Deploy failed on {{ inventory_hostname }}, rolled back"
+  always:
+    - ansible.builtin.file:
+        path: /srv/app/.deploying
+        state: absent</code></pre>
+<div class="body"><p><code>block / rescue / always</code> is try / except / finally. A host that hits <code>rescue</code> shows as <span class="rescued">rescued</span> and keeps going.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">- name: Create users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups | default(omit) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"     <span class="c"># hides the whole dict from output</span>
+    pause: 1
+    index_var: idx</code></pre>
+<div class="body"><p><code>default(omit)</code> leaves the argument out entirely when the key is missing, so the module keeps its own default. <code>label</code> keeps the log readable.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">- name: Wait for the API
+  ansible.builtin.uri:
+    url: "http://{{ inventory_hostname }}:8080/health"
+    status_code: 200
+  register: health
+  until: health.status == 200
+  retries: 30
+  delay: 5</code></pre>
+<div class="body"><p>Poll until success. <code>until</code> uses the registered result; <code>retries × delay</code> is your timeout.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">- hosts: web
+  serial: [1, "25%", "100%"]      <span class="c"># canary, then a quarter, then the rest</span>
+  max_fail_percentage: 10
+  any_errors_fatal: true
+  pre_tasks:
+    - ansible.builtin.command: /usr/local/bin/lb-drain {{ inventory_hostname }}
+      delegate_to: "{{ lb_host }}"
+  roles:
+    - app
+  post_tasks:
+    - ansible.builtin.command: /usr/local/bin/lb-enable {{ inventory_hostname }}
+      delegate_to: "{{ lb_host }}"</code></pre>
+<div class="body"><p>Rolling deploy. <code>serial</code> batches hosts, <code>delegate_to</code> runs the drain on the load balancer while iterating over the web hosts.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml">handlers:
+  - name: restart app
+    ansible.builtin.systemd:
+      name: app
+      state: restarted
+    listen: "app config changed"
+
+tasks:
+  - ansible.builtin.template: {src: app.conf.j2, dest: /etc/app.conf}
+    notify: "app config changed"
+  - ansible.builtin.meta: flush_handlers   <span class="c"># run handlers NOW, not at play end</span></code></pre>
+<div class="body"><p>Handlers run once at the end of the play no matter how many tasks notified them. <code>listen</code> lets several handlers share one topic name. <code>flush_handlers</code> forces them early.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.command: generate-token
+  run_once: true
+  delegate_to: localhost
+  register: token
+
+- ansible.builtin.debug:
+    msg: "{{ token.stdout }}"   <span class="c"># available on every host</span></code></pre>
+<div class="body"><p><code>run_once</code> executes on the first host but the registered value is copied to all of them.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.set_fact:
+    app_port: 8080
+    cacheable: true
+
+- ansible.builtin.include_tasks: "{{ ansible_os_family }}.yml"
+
+- ansible.builtin.import_tasks: common.yml
+  tags: [always]</code></pre>
+<div class="body"><p><code>import_*</code> is static (parsed up front, tags apply to children). <code>include_*</code> is dynamic (loops and per-host paths work, tags don't inherit).</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- name: Long compile
+  ansible.builtin.command: make -j8
+  async: 3600      <span class="c"># max seconds to run</span>
+  poll: 0          <span class="c"># fire and forget</span>
+  register: build
+
+- ansible.builtin.async_status:
+    jid: "{{ build.ansible_job_id }}"
+  register: job
+  until: job.finished
+  retries: 120
+  delay: 30</code></pre>
+<div class="body"><p>Run long tasks in the background and check on them later, so one slow host doesn't block the play.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.shell: |
+    set -o pipefail
+    curl -fsSL https://example.com/x.sh | sh
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/x</code></pre>
+<div class="body"><p><code>creates</code> / <code>removes</code> make <code>shell</code> and <code>command</code> idempotent. <code>pipefail</code> stops a silent failure in the first half of a pipe.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.uri:
+    url: https://api.example.com/deploy
+    headers:
+      Authorization: "Bearer {{ api_token }}"
+  no_log: true
+  environment:
+    HTTPS_PROXY: "{{ proxy_url | default('') }}"</code></pre>
+<div class="body"><p><code>no_log</code> hides the task's arguments and result from output and logs. Set <code>environment</code> per task, play or in <code>group_vars</code>.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- hosts: all
+  gather_facts: false
+  tasks:
+    - ansible.builtin.wait_for_connection:
+        timeout: 300
+    - ansible.builtin.setup:</code></pre>
+<div class="body"><p>For freshly created machines: wait for SSH before facts, then gather explicitly.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    validate: nginx -t -c %s
+    backup: true</code></pre>
+<div class="body"><p><code>validate</code> runs the check against the temp file first. A broken template never lands on disk. Works with <code>visudo -cf %s</code>, <code>sshd -t -f %s</code>, <code>named-checkconf %s</code>.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- name: Only when actually in --check
+  ansible.builtin.debug:
+    msg: "dry run"
+  when: ansible_check_mode
+
+- name: Still run during --check
+  ansible.builtin.command: cat /etc/version
+  check_mode: false
+  changed_when: false</code></pre>
+<div class="body"><p>Make <code>--check</code> useful for plays that need real data mid-run.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.copy:
+    src: files/
+    dest: /etc/app/
+  when:
+    - app_enabled | bool
+    - ansible_facts.os_family == "Debian"
+    - "'web' in group_names"</code></pre>
+<div class="body"><p>A list under <code>when</code> is ANDed and reads better than one long line. Quote conditions that start with a string.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="perf">
+<header><h2>09 · Speed</h2><p>Runs that take minutes, not lunch breaks.</p></header>
+<div class="grid">
+
+<article class="cmd wide"><pre><code class="ini">[defaults]
+forks = 50                    <span class="c"># default is 5</span>
+gathering = smart
+fact_caching = jsonfile
+fact_caching_connection = ~/.ansible/facts
+fact_caching_timeout = 86400
+
+[ssh_connection]
+pipelining = True             <span class="c"># one SSH round-trip per task instead of three</span>
+ssh_args = -o ControlMaster=auto -o ControlPersist=10m -o PreferredAuthentications=publickey</code></pre>
+<div class="body"><p>The four settings that fix most "Ansible is slow" complaints. Pipelining needs <code>requiretty</code> off in sudoers, which it is on modern distros.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- hosts: all
+  gather_facts: false      <span class="c"># or:</span>
+  gather_subset:
+    - "!all"
+    - "!min"
+    - network</code></pre>
+<div class="body"><p>Fact gathering is often the slowest task in the play. Turn it off when you don't use facts, or subset it.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- hosts: all
+  strategy: free</code></pre>
+<div class="body"><p>Each host races ahead independently instead of waiting for the slowest host at every task. Ideal for package installs, bad for anything that coordinates hosts.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.apt:
+    name: "{{ packages }}"      <span class="c"># one transaction</span>
+    state: present
+
+<span class="c"># not:</span>
+- ansible.builtin.apt:
+    name: "{{ item }}"
+  loop: "{{ packages }}"       <span class="c"># N transactions</span></code></pre>
+<div class="body"><p>Package, file, user and most modules accept lists. Looping over them is slower and noisier.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.command: expensive-thing
+  throttle: 2</code></pre>
+<div class="body"><p>Limit concurrency for one task only (a shared API, a license server) while the rest of the play keeps full forks.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">- ansible.builtin.synchronize:
+    src: build/
+    dest: /srv/app/
+    delete: true
+    rsync_opts: ["--exclude=.git"]</code></pre>
+<div class="body"><p>For directories with many files, <code>synchronize</code> (rsync) is orders of magnitude faster than <code>copy</code>.</p></div></article>
+
+<article class="cmd"><pre><code>ANSIBLE_CALLBACKS_ENABLED=profile_tasks,profile_roles,timer \
+ansible-playbook site.yml</code></pre>
+<div class="body"><p>Measure before tuning. The summary at the end names the slowest tasks and roles.</p></div></article>
+
+<article class="cmd"><pre><code>ansible-playbook site.yml -e 'ansible_ssh_pipelining=true'</code></pre>
+<div class="body"><p>Try pipelining for one run without editing config. If nothing breaks, make it permanent.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="jinja">
+<header><h2>10 · Filters &amp; Jinja</h2><p>The expressions worth memorizing.</p></header>
+<div class="grid">
+
+<article class="cmd wide"><div class="tblwrap"><table class="pattern">
+<tr><td><code>{{ x | default('n/a') }}</code></td><td>fallback when undefined</td><td><code>{{ x | default(omit) }}</code></td><td>drop the module arg entirely</td></tr>
+<tr><td><code>{{ x | mandatory }}</code></td><td>fail if undefined</td><td><code>{{ x | bool }}</code> / <code>| int</code></td><td>coerce "yes", "1", "true"</td></tr>
+<tr><td><code>{{ ok | ternary('up', 'down') }}</code></td><td>inline if/else</td><td><code>{{ x | type_debug }}</code></td><td>what type is this, really</td></tr>
+<tr><td><code>{{ d | to_nice_yaml }}</code> / <code>to_nice_json</code></td><td>pretty print</td><td><code>{{ s | from_json }}</code> / <code>from_yaml</code></td><td>parse a string</td></tr>
+<tr><td><code>{{ a | combine(b, recursive=true) }}</code></td><td>merge dicts</td><td><code>{{ d | dict2items }}</code> / <code>items2dict</code></td><td>loop over a dict</td></tr>
+<tr><td><code>{{ l | map(attribute='name') | list }}</code></td><td>pluck a field</td><td><code>{{ l | selectattr('state', 'eq', 'up') | list }}</code></td><td>filter objects</td></tr>
+<tr><td><code>{{ l | select('match', '^web') | list }}</code></td><td>regex filter strings</td><td><code>{{ l | reject('search', 'test') | list }}</code></td><td>inverse</td></tr>
+<tr><td><code>{{ a | union(b) }}</code> / <code>intersect</code> / <code>difference</code></td><td>set math</td><td><code>{{ l | unique | sort | flatten }}</code></td><td>tidy lists</td></tr>
+<tr><td><code>{{ s | regex_replace('^v', '') }}</code></td><td>sed-ish</td><td><code>{{ s | regex_search('\d+') }}</code></td><td>extract</td></tr>
+<tr><td><code>{{ p | basename }}</code> / <code>dirname</code> / <code>splitext</code></td><td>path bits</td><td><code>{{ s | quote }}</code></td><td>shell-safe</td></tr>
+<tr><td><code>{{ s | b64encode }}</code> / <code>b64decode</code></td><td>base64</td><td><code>{{ s | hash('sha256') }}</code></td><td>digest</td></tr>
+<tr><td><code>{{ pw | password_hash('sha512') }}</code></td><td>for <code>user: password=</code></td><td><code>{{ ip | ansible.utils.ipaddr('address') }}</code></td><td>IP maths (needs <code>ansible.utils</code>)</td></tr>
+<tr><td><code>{{ n | human_readable }}</code></td><td>1.0 GB</td><td><code>{{ '%Y-%m-%d' | strftime }}</code></td><td>date string</td></tr>
+<tr><td><code>{{ j | json_query('items[?state==`up`].name') }}</code></td><td>JMESPath (needs <code>community.general</code>)</td><td><code>{{ x is defined }}</code> / <code>is none</code> / <code>is truthy</code></td><td>tests</td></tr>
+</table></div></article>
+
+<article class="cmd"><pre><code class="yaml">db_hosts: "{{ groups['db'] | map('extract', hostvars, 'ansible_host') | list }}"
+first_db: "{{ groups['db'] | first }}"
+my_index: "{{ groups['web'].index(inventory_hostname) }}"</code></pre>
+<div class="body"><p>Build lists of other hosts' variables. The <code>extract</code> trick is how you render every peer's IP into a config file.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">{{ lookup('file', 'id_rsa.pub') }}
+{{ lookup('env', 'API_TOKEN') }}
+{{ lookup('password', '/dev/null length=24 chars=ascii_letters,digits') }}
+{{ lookup('template', 'snippet.j2') }}
+{{ lookup('pipe', 'git rev-parse --short HEAD') }}
+{{ query('fileglob', 'files/*.conf') }}</code></pre>
+<div class="body"><p>Lookups run on the <strong>controller</strong>, never the target. <code>query()</code> always returns a list; <code>lookup()</code> joins with commas.</p></div></article>
+
+<article class="cmd"><pre><code class="yaml">{{ ansible_facts['default_ipv4']['address'] }}
+{{ ansible_facts['memtotal_mb'] }}
+{{ ansible_facts['processor_vcpus'] }}
+{{ ansible_facts['os_family'] }}      <span class="c"># Debian / RedHat / …</span>
+{{ inventory_hostname }}              <span class="c"># name in inventory</span>
+{{ ansible_facts['hostname'] }}       <span class="c"># name the host reports</span>
+{{ group_names }}                     <span class="c"># groups this host is in</span>
+{{ play_hosts }}                      <span class="c"># hosts in the current play</span></code></pre>
+<div class="body"><p>The facts you'll use most. Prefer <code>ansible_facts['x']</code> over <code>ansible_x</code>; the latter is the legacy injected form.</p></div></article>
+
+<article class="cmd wide"><pre><code class="yaml"><span class="c"># nginx.conf.j2</span>
+<span class="c">{# jinja comment: not rendered #}</span>
+# {{ ansible_managed }}
+upstream app {
+{% for host in groups['app'] %}
+    server {{ hostvars[host]['ansible_host'] }}:{{ app_port }} weight={{ hostvars[host].weight | default(1) }};
+{% endfor %}
+}
+{% if tls_enabled | bool %}
+    listen 443 ssl;
+{% else %}
+    listen 80;
+{% endif %}</code></pre>
+<div class="body"><p><code>ansible_managed</code> stamps "do not edit by hand". <code>{%- ... -%}</code> trims whitespace. Set <code>trim_blocks</code> / <code>lstrip_blocks</code> on the <code>template</code> task for cleaner output.</p></div></article>
+
+</div></section>
+
+<!-- ============================================================ -->
+<section id="cfg">
+<header><h2>11 · ansible.cfg starter</h2><p>Drop this next to your playbooks. Project-local config wins over <code>~/.ansible.cfg</code>.</p></header>
+<div class="grid">
+
+<article class="cmd wide"><pre><code class="ini">[defaults]
+inventory            = inventory/
+roles_path           = roles
+collections_path     = collections
+interpreter_python   = auto_silent
+host_key_checking    = False          <span class="c"># or manage known_hosts properly</span>
+retry_files_enabled  = False
+forks                = 30
+timeout              = 30
+gathering            = smart
+fact_caching         = jsonfile
+fact_caching_connection = .facts_cache
+fact_caching_timeout = 7200
+callback_result_format = yaml
+callbacks_enabled    = timer, profile_tasks
+display_skipped_hosts = False
+log_path             = ./ansible.log
+vault_password_file  = ~/.vault_pass
+deprecation_warnings = False
+nocows               = 1
+
+[privilege_escalation]
+become        = True
+become_method = sudo
+
+[ssh_connection]
+pipelining = True
+ssh_args   = -o ControlMaster=auto -o ControlPersist=10m -o ServerAliveInterval=30
+
+[diff]
+always  = True
+context = 3</code></pre>
+<div class="body"><p>Precedence, highest first: <code>ANSIBLE_CONFIG</code> env var → <code>./ansible.cfg</code> → <code>~/.ansible.cfg</code> → <code>/etc/ansible/ansible.cfg</code>. Any setting can also be an env var: <code>ANSIBLE_FORKS=50</code>.</p><p class="tip"><b>Tip:</b> Ansible refuses to read <code>./ansible.cfg</code> from a world-writable directory. If it seems ignored, run <code>ansible --version</code> and look at the config file line.</p></div></article>
+
+<article class="cmd wide"><pre><code>project/
+├── ansible.cfg
+├── requirements.yml
+├── site.yml                <span class="c"># imports the playbooks below</span>
+├── playbooks/
+│   ├── web.yml
+│   └── db.yml
+├── inventory/
+│   ├── prod/
+│   │   ├── hosts.yml
+│   │   ├── group_vars/
+│   │   │   ├── all/
+│   │   │   │   ├── vars.yml
+│   │   │   │   └── vault.yml
+│   │   │   └── web.yml
+│   │   └── host_vars/
+│   └── staging/            <span class="c"># same shape</span>
+├── roles/
+│   └── nginx/
+│       ├── defaults/main.yml   <span class="c"># lowest precedence, user-overridable</span>
+│       ├── vars/main.yml       <span class="c"># high precedence, internal constants</span>
+│       ├── tasks/main.yml
+│       ├── handlers/main.yml
+│       ├── templates/
+│       ├── files/
+│       └── meta/main.yml
+└── collections/</code></pre>
+<div class="body"><p>One inventory directory per environment keeps <code>group_vars</code> from leaking between prod and staging. <code>-i inventory/prod</code> selects it.</p></div></article>
+
+<article class="cmd wide"><div class="tblwrap"><table class="pattern">
+<tr><td><b>Variable precedence</b> (low → high)</td><td>role <code>defaults/</code> → inventory file vars → inventory <code>group_vars/all</code> → inventory <code>group_vars/*</code> → inventory <code>host_vars/</code> → playbook <code>group_vars</code> / <code>host_vars</code> → host facts → play <code>vars:</code> → <code>vars_files</code> → role <code>vars/</code> → block vars → task vars → <code>include_vars</code> → <code>set_fact</code> / registered → <code>-e</code> extra vars</td></tr>
+</table></div></article>
+
+</div></section>
+
+<p class="empty" id="empty">Nothing matches. Try a module name, a flag, or a word from a tip.</p>
+</main>
+</div>
+
+<footer>Verify flags against <code>ansible-doc</code> and <code>ansible-playbook --help</code> for your installed version. Semantics above follow ansible-core 2.15 and later.</footer>
+
+<script>
+(function(){
+  var icons = {
+    copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+    done:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>'
+  };
+
+  /* light syntax colouring: one tokenizing pass so inserted markup is never re-matched */
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var reYaml = /(\{\{[^}]*\}\}|\{%[^%]*%\})|("[^"\n]*"|'[^'\n]*')|^(\s*-?\s*)([A-Za-z_][\w.\-\[\]]*)(\s*:)(?=\s|$)/gm;
+  var reIni  = /^(\[[\w_]+\])$|^([A-Za-z_]\w*)(\s*=)/gm;
+  var reSh   = /(\{\{[^}]*\}\}|\{%[^%]*%\})|(^|\s)(--?[a-zA-Z][\w-]*)/gm;
+  document.querySelectorAll('.cmd pre > code').forEach(function(code){
+    var mode = code.classList.contains('yaml') ? 'yaml' : code.classList.contains('ini') ? 'ini' : 'sh';
+    var out = [];
+    code.childNodes.forEach(function(n){
+      if (n.nodeType !== 3) { out.push(n.outerHTML); return; }
+      var t = esc(n.nodeValue);
+      if (mode === 'yaml') {
+        t = t.replace(reYaml, function(m, j, str, pre, key, colon){
+          if (j) return '<span class="j">' + j + '</span>';
+          if (str) return '<span class="s">' + str + '</span>';
+          return pre + '<span class="k">' + key + '</span>' + colon;
+        });
+      } else if (mode === 'ini') {
+        t = t.replace(reIni, function(m, hd, key, eq){
+          if (hd) return '<span class="hd">' + hd + '</span>';
+          return '<span class="k">' + key + '</span>' + eq;
+        });
+      } else {
+        t = t.replace(reSh, function(m, j, ws, flag){
+          if (j) return '<span class="j">' + j + '</span>';
+          return ws + '<span class="f">' + flag + '</span>';
+        });
+      }
+      out.push(t);
+    });
+    code.innerHTML = out.join('');
+  });
+
+  /* copy buttons */
+  document.querySelectorAll('.cmd pre').forEach(function(pre){
+    var b = document.createElement('button');
+    b.className = 'copy'; b.type = 'button'; b.setAttribute('aria-label','Copy'); b.innerHTML = icons.copy;
+    b.addEventListener('click', function(){
+      var text = pre.querySelector('code').innerText;
+      var write = navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject();
+      write.catch(function(){
+        var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch(e) {} document.body.removeChild(ta);
+      }).then(function(){
+        b.classList.add('done'); b.innerHTML = icons.done;
+        setTimeout(function(){ b.classList.remove('done'); b.innerHTML = icons.copy; }, 1400);
+      });
+    });
+    pre.appendChild(b);
+  });
+
+  /* filter */
+  var q = document.getElementById('q'), wrap = document.getElementById('searchwrap'), count = document.getElementById('count'), empty = document.getElementById('empty');
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.cmd'));
+  cards.forEach(function(c){ c.dataset.t = c.textContent.toLowerCase(); });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+  function filter(){
+    var terms = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    var shown = 0;
+    cards.forEach(function(c){
+      var ok = terms.every(function(t){ return c.dataset.t.indexOf(t) > -1; });
+      c.hidden = !ok; if (ok) shown++;
+    });
+    sections.forEach(function(s){
+      s.hidden = terms.length > 0 && !s.querySelector('.cmd:not([hidden])');
+    });
+    wrap.classList.toggle('active', terms.length > 0);
+    count.textContent = shown + ' / ' + cards.length;
+    empty.classList.toggle('show', terms.length > 0 && shown === 0);
+  }
+  q.addEventListener('input', filter);
+  document.addEventListener('keydown', function(e){
+    if (e.key === '/' && document.activeElement !== q && !/input|textarea/i.test(document.activeElement.tagName)) { e.preventDefault(); q.focus(); }
+    if (e.key === 'Escape' && document.activeElement === q) { q.value = ''; filter(); q.blur(); }
+  });
+
+  /* toc highlight */
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) {
+          links.forEach(function(l){ l.classList.toggle('on', l.getAttribute('href') === '#' + en.target.id); });
+        }
+      });
+    }, { rootMargin: '-80px 0px -70% 0px' });
+    sections.forEach(function(s){ io.observe(s); });
+  }
+
+  /* theme toggle: cycles system → dark → light */
+  var root = document.documentElement, btn = document.getElementById('theme');
+  var saved = null; try { saved = localStorage.getItem('theme'); } catch(e) {}
+  function apply(v){
+    if (v) root.setAttribute('data-theme', v); else root.removeAttribute('data-theme');
+    btn.textContent = v ? (v === 'dark' ? 'Dark' : 'Light') : 'Auto';
+  }
+  apply(saved);
+  btn.addEventListener('click', function(){
+    var cur = root.getAttribute('data-theme');
+    var next = cur === null ? 'dark' : cur === 'dark' ? 'light' : null;
+    apply(next);
+    try { next ? localStorage.setItem('theme', next) : localStorage.removeItem('theme'); } catch(e) {}
+  });
+})();
+</script>
+</body>
+</html>
