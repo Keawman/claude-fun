@@ -34,7 +34,8 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:84px}
+html{scroll-behavior:smooth;scroll-padding-top:84px;-webkit-text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
@@ -48,7 +49,8 @@ code,pre,kbd{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Conso
 .brand h1{margin:0;font:600 22px/1 "IBM Plex Sans Condensed","IBM Plex Sans",sans-serif;letter-spacing:-.01em}
 .brand .sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .search{position:relative;flex:1 1 260px;max-width:460px}
-.search input{width:100%;height:38px;padding:0 74px 0 36px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.search input{width:100%;height:38px;padding:0 74px 0 36px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px;-webkit-appearance:none;appearance:none}
+.search input::-webkit-search-decoration{-webkit-appearance:none}
 .search input::placeholder{color:var(--muted)}
 .search svg{position:absolute;left:11px;top:11px;width:16px;height:16px;color:var(--muted);pointer-events:none}
 .search kbd{position:absolute;right:10px;top:9px;font-size:11px;padding:2px 6px;border:1px solid var(--line);border-radius:4px;color:var(--muted);background:var(--chip)}
@@ -61,7 +63,7 @@ code,pre,kbd{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Conso
 nav.toc{position:sticky;top:calc(76px + env(safe-area-inset-top,0px));font-size:13px}
 nav.toc .label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px 10px}
 nav.toc a{display:block;padding:5px 10px;border-radius:6px;color:var(--muted);text-decoration:none;border-left:2px solid transparent}
-nav.toc a:hover{color:var(--ink);background:var(--chip)}
+@media (hover:hover){nav.toc a:hover{color:var(--ink);background:var(--chip)}}
 nav.toc a.on{color:var(--ink);border-left-color:var(--accent);background:var(--chip)}
 nav.toc a .n{display:inline-block;min-width:22px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
 
@@ -96,7 +98,7 @@ section header p{margin:0;color:var(--muted);font-size:14px}
 .cmd .body pre{margin:8px 0 0;padding:8px 10px;border-radius:6px;font-size:12.5px}
 .cmd .body pre code{background:none;padding:0;font-size:inherit}
 .copy{position:absolute;top:8px;right:8px;width:28px;height:28px;border:1px solid var(--term-line);border-radius:6px;background:var(--term-bg);color:var(--term-muted);cursor:pointer;display:grid;place-items:center;padding:0}
-.copy:hover{color:var(--term-ink);border-color:var(--term-muted)}
+@media (hover:hover){.copy:hover{color:var(--term-ink);border-color:var(--term-muted)}}
 .copy.done{color:var(--ok);border-color:var(--ok)}
 .copy svg{width:14px;height:14px}
 /* syntax */
@@ -126,6 +128,34 @@ footer{max-width:1240px;margin:0 auto;padding:0 20px 40px;color:var(--muted);fon
   nav.toc a .n{display:none}
   .grid{grid-template-columns:minmax(0,1fr)}
   .intro h2{font-size:28px}
+}
+@media (max-width:600px){
+  html{scroll-padding-top:100px}
+  section{scroll-margin-top:100px}
+  .top-inner{padding:8px 16px;gap:8px}
+  .brand h1{font-size:18px}
+  .search{flex:1 1 100%;max-width:none;order:3}
+  .search input{height:42px;font-size:16px}          /* 16px stops iOS zooming on focus */
+  .search kbd{display:none}
+  .search .count{top:12px}
+  .theme{height:32px;padding:0 10px;font-size:12px}
+  .recap{display:none}                                /* legend carries the meaning */
+  .legend{gap:6px 14px;font-size:12.5px}
+  .cmd pre{padding:10px 12px;font-size:12.5px}
+  .cmd pre code.sh{display:block;min-width:0;white-space:pre-wrap;padding-right:32px}
+  .cmd pre code.sh .ln{display:inline-block;max-width:100%;padding-left:1.4em;text-indent:-1.4em;white-space:pre-wrap;overflow-wrap:anywhere}
+  .copy{width:34px;height:34px;top:6px;right:6px}
+  .copy svg{width:16px;height:16px}
+  .cmd .body{padding:10px 12px 12px}
+  .pattern,.pattern tbody,.pattern tr,.pattern td{display:block}
+  .pattern td{border:0;padding:2px 12px;white-space:normal}
+  .pattern td:nth-child(odd){padding-top:9px}
+  .pattern td:nth-child(even){color:var(--muted);font-size:13px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+  .pattern tr:last-child td:last-child{border-bottom:0}
+  .pattern td b{color:var(--ink)}
+  section>header{flex-direction:column;gap:2px}
+  section h2{font-size:20px}
+  footer{font-size:12.5px}
 }
 @media (max-width:480px){
   .top-inner{padding:10px 16px}
@@ -833,7 +863,7 @@ always  = True
 context = 3</code></pre>
 <div class="body"><p>Precedence, highest first: <code>ANSIBLE_CONFIG</code> env var → <code>./ansible.cfg</code> → <code>~/.ansible.cfg</code> → <code>/etc/ansible/ansible.cfg</code>. Any setting can also be an env var: <code>ANSIBLE_FORKS=50</code>.</p><p class="tip"><b>Tip:</b> Ansible refuses to read <code>./ansible.cfg</code> from a world-writable directory. If it seems ignored, run <code>ansible --version</code> and look at the config file line.</p></div></article>
 
-<article class="cmd wide"><pre><code>project/
+<article class="cmd wide"><pre><code class="txt">project/
 ├── ansible.cfg
 ├── requirements.yml
 ├── site.yml                <span class="c"># imports the playbooks below</span>
@@ -887,7 +917,8 @@ context = 3</code></pre>
   var reIni  = /^(\[[\w_]+\])$|^([A-Za-z_]\w*)(\s*=)/gm;
   var reSh   = /(\{\{[^}]*\}\}|\{%[^%]*%\})|(^|\s)(--?[a-zA-Z][\w-]*)/gm;
   document.querySelectorAll('.cmd pre > code').forEach(function(code){
-    var mode = code.classList.contains('yaml') ? 'yaml' : code.classList.contains('ini') ? 'ini' : 'sh';
+    var mode = code.classList.contains('yaml') ? 'yaml' : code.classList.contains('ini') ? 'ini' : code.classList.contains('txt') ? 'txt' : 'sh';
+    if (mode === 'sh') code.classList.add('sh');
     var out = [];
     code.childNodes.forEach(function(n){
       if (n.nodeType !== 3) { out.push(n.outerHTML); return; }
@@ -903,7 +934,7 @@ context = 3</code></pre>
           if (hd) return '<span class="hd">' + hd + '</span>';
           return '<span class="k">' + key + '</span>' + eq;
         });
-      } else {
+      } else if (mode === 'sh') {
         t = t.replace(reSh, function(m, j, ws, flag){
           if (j) return '<span class="j">' + j + '</span>';
           return ws + '<span class="f">' + flag + '</span>';
@@ -911,7 +942,7 @@ context = 3</code></pre>
       }
       out.push(t);
     });
-    code.innerHTML = out.join('');
+    code.innerHTML = out.join('').split('\n').map(function(l){ return '<span class="ln">' + l + '</span>'; }).join('\n');
   });
 
   /* copy buttons */
