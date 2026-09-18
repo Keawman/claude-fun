@@ -1,0 +1,36 @@
+/* Print: light theme, sidebar hidden, everything expanded. */
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #fff; --bg-elev: #fff; --surface: #fff; --surface-2: #f1f3f6; --line: #d5d9e0; --line-strong: #b9bfca;
+    --ink: #111; --ink-2: #222; --muted: #555; --accent-ink: #8a4b00; --link: #1a4fa0;
+    --term-bg: #f6f7f9; --term-ink: #111; --term-muted: #666; --term-bar: #e6e9ee; --term-prompt: #0a6b4f;
+    --danger: #a11; --warn: #7a4e00; --info: #144a99; --ok: #0a6b4f; --ph: #5a1fa3; --ph-soft: #eee6fb;
+    --code-flag: #1a4fa0; --code-str: #0a6b4f; --code-kw: #8a4b00; --code-cmt: #666; --code-num: #7a4e00; --code-var: #9a3b12;
+    color-scheme: light;
+  }
+  html { scroll-padding-top: 0; }
+  body { font-size: 11.5px; background: #fff; color: #111; }
+  .topbar, .sidebar, .backdrop, .skip, .copy, .card-toggle, .toast, .hero .legend, .term-png, .footer .nop { display: none !important; }
+  .layout { padding-top: 0; }
+  .main { margin-left: 0; padding: 0; max-width: none; }
+  .topic-section > h2 { position: static; margin: 0; padding: 14px 0 6px; page-break-after: avoid; break-after: avoid; }
+  .topic-section { page-break-before: always; break-before: page; }
+  .topic-section:first-of-type { page-break-before: auto; break-before: auto; }
+  .card { break-inside: avoid; page-break-inside: avoid; box-shadow: none; border-color: #c9ced8; }
+  .card.collapsed .card-body { display: block !important; }
+  .card-toggle { display: none; }
+  .cmd pre { white-space: pre-wrap; word-break: break-word; border-color: #c9ced8; padding-right: 12px; }
+  .term-body { white-space: pre-wrap; word-break: break-word; max-height: none; overflow: visible; }
+  .term-body .token.property { color: #0a6b4f; }
+  .term-body .token.string { color: #1a4fa0; }
+  .term-body .token.number { color: #7a4e00; }
+  .term-body .token.boolean, .term-body .token.null { color: #8a4b00; }
+  .term-body .token.punctuation, .term-body .token.operator { color: #555; }
+  .term-bar .dot { border: 1px solid #999; }
+  .terminal { border-color: #c9ced8; }
+  .terminal.has-png .term-bar, .terminal.has-png .term-body { display: block; }
+  .hidden-by-search { display: none !important; }
+  a { color: inherit; }
+  h2 .anchor, h3 .anchor, h4 .anchor { display: none; }
+  .tag-destructive { border: 1px solid #a11; }
+}
