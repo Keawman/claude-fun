@@ -84,6 +84,8 @@ h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;le
 .tile::after{content:"";position:absolute;inset:0;
   background:radial-gradient(120% 95% at 50% 0%,rgba(255,255,255,.10),transparent 65%);pointer-events:none}
 .tile .emoji{font-size:var(--es,64px);line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.tile .tw{width:var(--es,64px);height:var(--es,64px);display:block;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .tile .gloss{font-size:var(--gs,19px);font-weight:700;text-align:center;padding:8px;
   color:var(--ink,#fff);letter-spacing:.01em;line-height:1.25}
 .glyphwrap{position:relative;width:64%;height:64%;color:var(--ink,#fff)}
@@ -238,8 +240,15 @@ h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;le
   <section id="v-stats" class="view"></section>
 </div>
 
+<footer style="max-width:780px;margin:0 auto;padding:18px 12px 28px;text-align:center;
+  font-size:11px;line-height:1.6;color:#6d768c">
+  Emoji artwork from <b>Twemoji</b> v15.1.0 &copy; Twitter, Inc and other contributors,
+  licensed <a href="https://creativecommons.org/licenses/by/4.0/" style="color:#99a1b5">CC-BY 4.0</a>.
+</footer>
+
 <input type="file" id="importFile" accept="application/json,.json" style="display:none">
 
+<script src="art.js"></script>
 <script src="words.js"></script>
 <script>
 "use strict";
@@ -348,6 +357,13 @@ function catVars(cat){
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 
+/* Twemoji drawing if art.js supplied one, else the platform's own emoji font. */
+function emojiHTML(char){
+  const lib = (typeof EMOJI_SVG !== "undefined") ? EMOJI_SVG : null;
+  const body = lib ? lib[char] : null;
+  if (body) return '<svg class="tw" viewBox="0 0 36 36" aria-hidden="true">' + body + '</svg>';
+  return '<span class="emoji">' + esc(char) + '</span>';
+}
 function glyphHTML(icon, mod){
   const base = PRIMS[icon] || PRIMS.box;
   let h = '<span class="glyphwrap"><svg viewBox="0 0 24 24" aria-hidden="true">' + base + '</svg>';
@@ -358,7 +374,7 @@ function glyphHTML(icon, mod){
 function tileHTML(w, cls){
   const a = w.art || {};
   let inner;
-  if (a.type === "emoji" && a.char)      inner = '<span class="emoji">' + esc(a.char) + '</span>';
+  if (a.type === "emoji" && a.char)      inner = emojiHTML(a.char);
   else if (a.type === "glyph" && a.icon) inner = glyphHTML(a.icon, a.mod);
   else if (a.type === "text" && a.gloss) inner = '<span class="gloss">' + esc(a.gloss) + '</span>';
   else                                   inner = '<span class="gloss">' + esc(w.english) + '</span>';
