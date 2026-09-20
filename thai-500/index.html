@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Thai Vocab 500</title>
+<style>
+:root{
+  --bg:#12141a; --bg2:#1a1d26; --bg3:#232733; --line:#333949;
+  --fg:#e9ecf5; --dim:#99a1b5; --dimmer:#6d768c;
+  --accent:#ffb454; --accent2:#7fd4a8; --bad:#ff7a7a; --good:#5fd39a;
+  --r:14px; --tap:44px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --thai:"Leelawadee UI","Noto Sans Thai","Sarabun","Thonburi","Krungthep","Tahoma",var(--font);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--font);
+  font-size:16px; line-height:1.45; overscroll-behavior-y:contain;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:780px;margin:0 auto;padding:0 12px 48px}
+
+/* ---------- HUD ---------- */
+#hud{
+  position:sticky;top:0;z-index:30;background:rgba(18,20,26,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) 12px 8px;
+}
+.hudrow{max-width:780px;margin:0 auto;display:flex;gap:6px;align-items:stretch;flex-wrap:wrap}
+.stat{flex:1 1 0;min-width:62px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:10px;padding:5px 7px;text-align:center}
+.stat b{display:block;font-size:15px;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dimmer)}
+.stat.hot{border-color:var(--accent);box-shadow:0 0 0 1px rgba(255,180,84,.25) inset}
+.stat.hot b{color:var(--accent)}
+.stat.paused b{color:var(--dimmer)}
+#multBadge{display:none;font-size:10px;color:var(--accent);font-weight:700}
+.stat.hot #multBadge{display:block}
+
+/* ---------- tabs ---------- */
+#tabs{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);
+  margin:0 -12px 14px;padding:6px 8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;min-height:var(--tap);padding:0 15px;border-radius:999px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--dim);font-size:14px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#1a1205}
+.tab:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+
+/* ---------- generic ---------- */
+button{font-family:inherit}
+.btn{min-height:var(--tap);padding:0 18px;border-radius:12px;border:1px solid var(--line);
+  background:var(--bg3);color:var(--fg);font-size:15px;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1a1205}
+.btn.ok{background:var(--good);border-color:var(--good);color:#06291a}
+.btn.no{background:#3a2430;border-color:#5e3242;color:var(--bad)}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row.center{justify-content:center}
+.muted{color:var(--dim)}
+.tiny{font-size:12px}
+h2{font-size:17px;margin:22px 0 10px;letter-spacing:.02em}
+h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.panel{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.view{display:none}
+.view.on{display:block}
+
+/* ---------- art tiles ---------- */
+.tile{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  border-radius:18px;background:var(--tint,#232733);border:1px solid var(--edge,#333949);
+  overflow:hidden;aspect-ratio:1/1;width:100%;
+}
+.tile::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(120% 95% at 50% 0%,rgba(255,255,255,.10),transparent 65%);pointer-events:none}
+.tile .emoji{font-size:var(--es,64px);line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.tile .gloss{font-size:var(--gs,19px);font-weight:700;text-align:center;padding:8px;
+  color:var(--ink,#fff);letter-spacing:.01em;line-height:1.25}
+.glyphwrap{position:relative;width:64%;height:64%;color:var(--ink,#fff)}
+.glyphwrap svg{position:absolute;inset:0;width:100%;height:100%;
+  fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.glyphwrap svg .f{fill:currentColor;stroke:none}
+.glyphwrap .mod{left:auto;top:auto;right:-14%;bottom:-12%;width:46%;height:46%;
+  background:var(--badge,#12141a);border-radius:50%;padding:11%;stroke-width:2.6;
+  box-shadow:0 0 0 2px var(--badge,#12141a)}
+.tile.big{--es:88px;--gs:26px}
+.tile.sm{--es:40px;--gs:15px}
+.opts .tile{aspect-ratio:4/3}
+.opts .tile-text{--gs:17px}
+
+/* ---------- card ---------- */
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:18px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.cardtile{width:min(58vw,210px);margin-bottom:6px}
+.thai{font-family:var(--thai);font-size:clamp(34px,10vw,48px);line-height:1.3;font-weight:600;
+  text-align:center;word-break:keep-all}
+.roman{font-size:19px;color:var(--accent);letter-spacing:.01em;text-align:center}
+.roman .syl{border-bottom:1px dotted rgba(255,180,84,.5);cursor:help}
+.tones{font-size:11px;color:var(--dimmer);text-transform:uppercase;letter-spacing:.09em}
+.eng{font-size:22px;font-weight:600;text-align:center}
+.meta{font-size:12px;color:var(--dimmer)}
+.badge-master{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;
+  background:var(--good);color:#06291a;display:none;align-items:center;justify-content:center;
+  font-size:15px;font-weight:800}
+.card.mastered .badge-master{display:flex}
+.spk{min-width:var(--tap);min-height:var(--tap);border-radius:50%;border:1px solid var(--line);
+  background:var(--bg3);color:var(--fg);font-size:19px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center}
+.spk:disabled{opacity:.3}
+
+/* ---------- quiz ---------- */
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.opt{padding:8px;border-radius:16px;border:1px solid var(--line);background:var(--bg2);
+  cursor:pointer;min-height:var(--tap);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;color:var(--fg);font-family:inherit}
+.opt.text{padding:14px 10px}
+.opt .othai{font-family:var(--thai);font-size:clamp(24px,7vw,32px);font-weight:600}
+.opt .oroman{font-size:13px;color:var(--accent)}
+.opt.right{border-color:var(--good);background:rgba(95,211,154,.14);animation:pop .3s ease}
+.opt.wrongpick{border-color:var(--bad);background:rgba(255,122,122,.14);animation:shake .3s ease}
+.opt.out{opacity:.25;pointer-events:none}
+.opt:disabled{cursor:default}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.flash-good{animation:fgood .55s ease}
+.flash-bad{animation:fbad .55s ease}
+@keyframes fgood{0%{box-shadow:0 0 0 0 rgba(95,211,154,0)}30%{box-shadow:0 0 0 4px rgba(95,211,154,.55)}100%{box-shadow:0 0 0 0 rgba(95,211,154,0)}}
+@keyframes fbad{0%{box-shadow:0 0 0 0 rgba(255,122,122,0)}30%{box-shadow:0 0 0 4px rgba(255,122,122,.55)}100%{box-shadow:0 0 0 0 rgba(255,122,122,0)}}
+.verdict{margin-top:12px;padding:12px;border-radius:12px;text-align:center;font-weight:600;display:none}
+.verdict.on{display:block;animation:pop .3s ease}
+.verdict.good{background:rgba(95,211,154,.15);color:var(--good)}
+.verdict.bad{background:rgba(255,122,122,.13);color:var(--bad)}
+.verdict .ans{display:block;font-family:var(--thai);font-size:28px;color:var(--fg);margin-top:4px}
+.verdict .ansr{display:block;font-size:14px;color:var(--accent);font-family:var(--font)}
+
+/* typing */
+.tinput{width:100%;max-width:340px;min-height:var(--tap);font-size:20px;text-align:center;
+  border-radius:12px;border:1px solid var(--line);background:var(--bg3);color:var(--fg);
+  padding:8px 12px;font-family:inherit}
+.tinput:focus{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ---------- progress ---------- */
+.bar{height:7px;border-radius:99px;background:var(--bg3);overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--good));
+  border-radius:99px;transition:width .35s ease}
+.barline{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;margin:7px 0}
+.barline .lab{font-size:13px}
+.barline .num{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.barline .bar{grid-column:1/-1}
+
+/* ---------- units ---------- */
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.unit{text-align:left;padding:12px;border-radius:12px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--fg);cursor:pointer;min-height:var(--tap);font-family:inherit}
+.unit.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.unit.locked{opacity:.5;cursor:not-allowed}
+.unit.done{border-color:var(--good)}
+.unit .ut{font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.unit .ur{font-size:11px;color:var(--dimmer);margin:2px 0 7px}
+.scopebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:13px;color:var(--dim)}
+.pill{border-radius:999px;border:1px solid var(--line);background:var(--bg2);padding:5px 12px;
+  font-size:12px;font-weight:600;color:var(--dim)}
+.pill.on{background:var(--accent2);border-color:var(--accent2);color:#06291a}
+
+/* ---------- stats ---------- */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi b{display:block;font-size:23px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:11px;color:var(--dimmer);text-transform:uppercase;letter-spacing:.07em}
+.unitdots{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.udot{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:7px;text-align:center}
+.udot b{font-size:12px;display:block}
+.udot .bar{margin-top:5px}
+.notice{background:rgba(255,180,84,.1);border:1px solid rgba(255,180,84,.4);color:var(--accent);
+  border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.empty{text-align:center;padding:30px 14px}
+.empty .big{font-size:42px}
+@media (max-width:420px){
+  .stat span{font-size:9px}
+  .stat b{font-size:14px}
+  .opts{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div class="hudrow">
+    <div class="stat"><b id="hScore">0</b><span>Score</span></div>
+    <div class="stat"><b id="hMastered">0 / 500</b><span>Mastered</span></div>
+    <div class="stat" id="hStreakBox"><b id="hStreak">0</b><span>Streak</span><i id="multBadge">1.5&times;</i></div>
+    <div class="stat" id="hSessBox"><b id="hSess">00:00</b><span>Session</span></div>
+    <div class="stat"><b id="hTotal">00:00:00</b><span>Total</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav id="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="units"  aria-selected="false">Units</button>
+    <button class="tab" role="tab" data-view="learn"  aria-selected="true">Learn</button>
+    <button class="tab" role="tab" data-view="match"  aria-selected="false">Match</button>
+    <button class="tab" role="tab" data-view="reverse" aria-selected="false">Reverse</button>
+    <button class="tab" role="tab" data-view="typing" aria-selected="false">Typing</button>
+    <button class="tab" role="tab" data-view="stats"  aria-selected="false">Stats</button>
+  </nav>
+
+  <div id="storeWarn" class="notice" style="display:none">
+    Progress can’t be saved in this browser (localStorage is blocked), so this session won’t survive a reload.
+    Use <b>Export</b> on the Stats tab to keep it.
+  </div>
+
+  <section id="v-units" class="view">
+    <div class="scopebar">
+      <span>Practising:</span><span class="pill on" id="scopeLabel">Unit 1</span>
+      <button class="btn ghost" id="freeReviewBtn">Free review</button>
+    </div>
+    <div class="units" id="unitGrid"></div>
+    <p class="tiny muted" style="margin-top:14px">
+      A unit unlocks when 80% of the previous unit (20 of 25 words) reaches Leitner box 5.
+      Free review draws on every word you have already seen, across all units.
+    </p>
+  </section>
+
+  <section id="v-learn" class="view on"></section>
+  <section id="v-match" class="view"></section>
+  <section id="v-reverse" class="view"></section>
+  <section id="v-typing" class="view"></section>
+  <section id="v-stats" class="view"></section>
+</div>
+
+<input type="file" id="importFile" accept="application/json,.json" style="display:none">
+
+<script src="words.js"></script>
+<script>
+"use strict";
+/* ==========================================================================
+   Thai Vocab 500 — single-file game logic.
+   Sections: 1 SVG primitives · 2 art tiles · 3 tones · 4 state · 5 scheduling
+             6 HUD + timer · 7 views · 8 modes · 9 stats/data · 10 boot
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 1. SVG */
+/* 73 reusable primitives, 24x24, stroked with currentColor. Every glyph card
+   is one primitive plus an optional badge primitive — no per-word artwork. */
+const PRIMS = {
+ "arrow-right":'<line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/>',
+ "arrow-left":'<line x1="20" y1="12" x2="4" y2="12"/><polyline points="10 6 4 12 10 18"/>',
+ "arrow-up":'<line x1="12" y1="20" x2="12" y2="4"/><polyline points="6 10 12 4 18 10"/>',
+ "arrow-down":'<line x1="12" y1="4" x2="12" y2="20"/><polyline points="6 14 12 20 18 14"/>',
+ "arrow-cycle":'<path d="M4 12a8 8 0 0 1 13.7-5.6"/><polyline points="18 2 18 7 13 7"/><path d="M20 12a8 8 0 0 1-13.7 5.6"/><polyline points="6 22 6 17 11 17"/>',
+ "arrows-swap":'<polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="17" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="21" y1="16" x2="7" y2="16"/>',
+ "person":'<circle cx="12" cy="6.5" r="3.2"/><path d="M5.5 21v-2.2a6.5 6.5 0 0 1 13 0V21"/>',
+ "person-run":'<circle cx="15.5" cy="4.6" r="2.4"/><path d="M14 9l-4.5 3.2 2.2 3.8L9 21"/><path d="M14 9l4 2.2.8 4"/><path d="M9.5 12.2L5 11"/>',
+ "person-sit":'<circle cx="10.5" cy="5" r="2.4"/><path d="M10.5 8.2v6.3h6.3"/><path d="M16.8 14.5V21"/><path d="M10.5 14.5L6.5 18"/>',
+ "people":'<circle cx="8.6" cy="7.4" r="3"/><path d="M2.8 20v-1.2a5.8 5.8 0 0 1 11.6 0V20"/><circle cx="17.2" cy="9" r="2.4"/><path d="M13 20v-1a4.4 4.4 0 0 1 8.8 0V20"/>',
+ "head":'<circle cx="12" cy="9.5" r="6"/><path d="M8.5 19h7"/>',
+ "hand":'<path d="M9 11.5V5.2a1.5 1.5 0 0 1 3 0v6"/><path d="M12 11V4.2a1.5 1.5 0 0 1 3 0V11"/><path d="M15 11.5V6.6a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7 6 6 0 0 1-6-6v-3.2a1.5 1.5 0 0 1 3 0"/>',
+ "heart":'<path d="M12 20.2S4.8 15.6 4.8 10.6A4.1 4.1 0 0 1 12 7.8a4.1 4.1 0 0 1 7.2 2.8c0 5-7.2 9.6-7.2 9.6z"/>',
+ "heart-broken":'<path d="M12 20.2S4.8 15.6 4.8 10.6A4.1 4.1 0 0 1 12 7.8a4.1 4.1 0 0 1 7.2 2.8c0 5-7.2 9.6-7.2 9.6z"/><polyline points="12.6 8 10.2 12.4 13.6 14 11.4 18.4"/>',
+ "eye":'<path d="M2.5 12S6 6.2 12 6.2 21.5 12 21.5 12 18 17.8 12 17.8 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/>',
+ "ear":'<path d="M8.5 20.5c0-3-3.2-4-3.2-9a6.4 6.4 0 0 1 12.8 0c0 3-3.1 3.1-3.1 6.1a2.6 2.6 0 0 1-4.7 1.5"/><path d="M9.2 10a3 3 0 0 1 5.6-1.5"/>',
+ "mouth":'<path d="M4 12h16"/><path d="M4 12c3 5.6 13 5.6 16 0"/><path d="M4 12c3-4.4 13-4.4 16 0"/>',
+ "speech":'<path d="M20 15.2a2 2 0 0 1-2 2H8.5L4 21.5V5.8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/>',
+ "thought":'<path d="M17 13.6a4.6 4.6 0 1 0-4.3-7.5A4.1 4.1 0 0 0 5.8 8.4 3.6 3.6 0 0 0 7 13.6z"/><circle cx="7.2" cy="18" r="1.7"/><circle cx="4" cy="21.2" r="1"/>',
+ "question":'<circle cx="12" cy="12" r="9"/><path d="M9.3 9.4a3 3 0 0 1 5.8.9c0 2-3.1 2.4-3.1 4"/><circle class="f" cx="12" cy="17.4" r="1"/>',
+ "exclaim":'<circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="13"/><circle class="f" cx="12" cy="17" r="1"/>',
+ "clock":'<circle cx="12" cy="12" r="9"/><polyline points="12 6.8 12 12 15.8 14"/>',
+ "calendar":'<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
+ "hourglass":'<path d="M6 3h12"/><path d="M6 21h12"/><path d="M7.2 3c0 5 4.8 6 4.8 9s-4.8 4-4.8 9"/><path d="M16.8 3c0 5-4.8 6-4.8 9s4.8 4 4.8 9"/>',
+ "house":'<path d="M3 11l9-7.2 9 7.2"/><path d="M5.2 10.2V20h13.6v-9.8"/>',
+ "door":'<rect x="6" y="3" width="12" height="18" rx="1.4"/><circle class="f" cx="14.6" cy="12" r="1"/>',
+ "book":'<path d="M4.2 5A2.6 2.6 0 0 1 6.8 2.4H20V19.6H6.8A2.6 2.6 0 0 0 4.2 22.2z"/><line x1="8.4" y1="7" x2="16" y2="7"/>',
+ "note":'<rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8.6" y1="8" x2="15.4" y2="8"/><line x1="8.6" y1="12" x2="15.4" y2="12"/><line x1="8.6" y1="16" x2="13" y2="16"/>',
+ "pen":'<path d="M16.6 3.4a2.1 2.1 0 0 1 3 3L8 18l-4.2 1.2L5 15z"/>',
+ "star":'<polygon points="12 3 14.8 9.1 21.4 9.9 16.5 14.4 17.9 21 12 17.6 6.1 21 7.5 14.4 2.6 9.9 9.2 9.1"/>',
+ "spark":'<path d="M12 2.8l1.9 5.4 5.3 1.9-5.3 1.9-1.9 5.4-1.9-5.4L4.8 10.1 10.1 8.2z"/><circle cx="18.4" cy="18.4" r="1.7"/>',
+ "check":'<polyline points="4 12.6 9.4 18 20 6.2"/>',
+ "cross":'<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+ "plus":'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+ "minus":'<line x1="5" y1="12" x2="19" y2="12"/>',
+ "bars":'<line x1="6" y1="20.5" x2="6" y2="14"/><line x1="12" y1="20.5" x2="12" y2="9"/><line x1="18" y1="20.5" x2="18" y2="3.8"/>',
+ "scale":'<line x1="12" y1="3.6" x2="12" y2="20.5"/><line x1="6.5" y1="20.5" x2="17.5" y2="20.5"/><line x1="4" y1="7.6" x2="20" y2="7.6"/><path d="M4 7.6L1.8 13a2.9 2.9 0 0 0 4.4 0z"/><path d="M20 7.6L22.2 13a2.9 2.9 0 0 1-4.4 0z"/>',
+ "coin":'<circle cx="12" cy="12" r="8.2"/><line x1="12" y1="7.4" x2="12" y2="16.6"/><path d="M14.6 9.6a2.6 2.6 0 0 0-4.3 1.4c0 2.5 5.1 1.2 5.1 3.6a2.6 2.6 0 0 1-4.4 1.5"/>',
+ "bag":'<path d="M4.8 8h14.4l-1.3 12.2H6.1z"/><path d="M8.8 8V6.2a3.2 3.2 0 0 1 6.4 0V8"/>',
+ "target":'<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="4.2"/><circle class="f" cx="12" cy="12" r="1.3"/>',
+ "bolt":'<polygon points="13.4 2 4.2 13.8 11 13.8 10.2 22 19.4 10.2 13 10.2"/>',
+ "fire":'<path d="M12 21.4a5.2 5.2 0 0 0 5.2-5.2c0-4.2-5.2-5.2-3.1-10.4-4.2 1-7.3 4.2-7.3 9.4a5.2 5.2 0 0 0 5.2 6.2z"/><path d="M12 21.4a2.5 2.5 0 0 0 2.5-2.5c0-2-2.5-2.6-2.5-5.1-1.6 1-2.5 2.6-2.5 5.1a2.5 2.5 0 0 0 2.5 2.5z"/>',
+ "snow":'<line x1="12" y1="2.8" x2="12" y2="21.2"/><line x1="4" y1="7.4" x2="20" y2="16.6"/><line x1="4" y1="16.6" x2="20" y2="7.4"/><polyline points="9 5 12 8 15 5"/><polyline points="9 19 12 16 15 19"/>',
+ "drop":'<path d="M12 3s6.2 7.2 6.2 11.1a6.2 6.2 0 0 1-12.4 0C5.8 10.2 12 3 12 3z"/>',
+ "wave":'<path d="M2.5 9.4c3.2-3.2 5.3 3.2 8.5 0s5.3 3.2 8.5 0"/><path d="M2.5 15.4c3.2-3.2 5.3 3.2 8.5 0s5.3 3.2 8.5 0"/>',
+ "sun":'<circle cx="12" cy="12" r="4.4"/><line x1="12" y1="2" x2="12" y2="4.4"/><line x1="12" y1="19.6" x2="12" y2="22"/><line x1="2" y1="12" x2="4.4" y2="12"/><line x1="19.6" y1="12" x2="22" y2="12"/><line x1="5" y1="5" x2="6.7" y2="6.7"/><line x1="17.3" y1="17.3" x2="19" y2="19"/><line x1="19" y1="5" x2="17.3" y2="6.7"/><line x1="6.7" y1="17.3" x2="5" y2="19"/>',
+ "moon":'<path d="M20.2 14.6A8.6 8.6 0 1 1 9.5 3.8a7 7 0 0 0 10.7 10.8z"/>',
+ "cloud":'<path d="M7 19h10.2a4.1 4.1 0 0 0 .5-8.2A6.1 6.1 0 0 0 6.2 12.4 3.7 3.7 0 0 0 7 19z"/>',
+ "leaf":'<path d="M20 4C10 4 4 9 4 16c0 2 1 4 1 4s9 1.2 13-5c2-3.2 2-11 2-11z"/><path d="M5 20c3-6 8-9.2 12-10.2"/>',
+ "tool":'<path d="M14.8 6.4a3.6 3.6 0 0 1 5-5l-3 3 1.8 1.8 3-3a3.6 3.6 0 0 1-5 5L4.6 18.6a2 2 0 1 1-2.8-2.8z"/>',
+ "key":'<circle cx="7.6" cy="16.4" r="3.6"/><line x1="10.2" y1="13.8" x2="20" y2="4"/><line x1="17.2" y1="4" x2="20.2" y2="7"/><line x1="14.6" y1="6.6" x2="17.2" y2="9.2"/>',
+ "magnify":'<circle cx="10.5" cy="10.5" r="6.6"/><line x1="15.4" y1="15.4" x2="21" y2="21"/>',
+ "bed":'<path d="M3 19V7"/><path d="M3 12h18v7"/><path d="M3 19h18"/><circle cx="7.6" cy="9.4" r="2"/>',
+ "bowl":'<path d="M3 11.4h18a9 9 0 0 1-18 0z"/><path d="M9 7.6c0-1.6 1.6-1.6 1.6-3.2"/><path d="M13.4 7.6c0-1.6 1.6-1.6 1.6-3.2"/>',
+ "cup":'<path d="M5.6 4.4h11.2v9a5.6 5.6 0 0 1-11.2 0z"/><path d="M16.8 6.6h2.4a2.5 2.5 0 0 1 0 5h-2.4"/><line x1="4" y1="20.6" x2="19" y2="20.6"/>',
+ "brain":'<path d="M9.6 3.6a3 3 0 0 0-3 3 3 3 0 0 0-1.4 5.5A3 3 0 0 0 7 17.6a3 3 0 0 0 5.4 1.6V5.2a3 3 0 0 0-2.8-1.6z"/><path d="M14.4 3.6a3 3 0 0 1 3 3 3 3 0 0 1 1.4 5.5 3 3 0 0 1-1.8 5.5 3 3 0 0 1-5.4 1.6"/>',
+ "smile":'<circle cx="12" cy="12" r="9"/><path d="M7.8 13.8a5 5 0 0 0 8.4 0"/><circle class="f" cx="9.2" cy="10" r=".9"/><circle class="f" cx="14.8" cy="10" r=".9"/>',
+ "frown":'<circle cx="12" cy="12" r="9"/><path d="M7.8 16.4a5 5 0 0 1 8.4 0"/><circle class="f" cx="9.2" cy="10" r=".9"/><circle class="f" cx="14.8" cy="10" r=".9"/>',
+ "shield":'<path d="M12 2.4l8 3v6c0 5.1-3.5 9.2-8 11.2-4.5-2-8-6.1-8-11.2v-6z"/>',
+ "flag":'<line x1="5" y1="21.4" x2="5" y2="2.6"/><path d="M5 4h12.4l-2.6 4 2.6 4H5z"/>',
+ "box":'<rect x="4" y="4" width="16" height="16" rx="2.4"/>',
+ "trash":'<line x1="4" y1="7" x2="20" y2="7"/><path d="M9 7V4h6v3"/><path d="M6.2 7l1 13.2h9.6l1-13.2"/>',
+ "music":'<path d="M9 18V5.2l11-2.2V16"/><circle cx="6.4" cy="18" r="2.6"/><circle cx="17.4" cy="16" r="2.6"/>',
+ "bell":'<path d="M18.2 16.6H5.8L7.5 13.8V10a4.5 4.5 0 0 1 9 0v3.8z"/><path d="M9.9 19.4a2.2 2.2 0 0 0 4.2 0"/>',
+ "ruler":'<rect x="2" y="8" width="20" height="8" rx="1.4"/><line x1="7" y1="8" x2="7" y2="12"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="17" y1="8" x2="17" y2="12"/>',
+ "grid":'<rect x="3" y="3" width="8" height="8" rx="1.4"/><rect x="13" y="3" width="8" height="8" rx="1.4"/><rect x="3" y="13" width="8" height="8" rx="1.4"/><rect x="13" y="13" width="8" height="8" rx="1.4"/>',
+ "pie":'<circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/>',
+ "link":'<path d="M10 13.4a4.2 4.2 0 0 0 6 0l2.8-2.8a4.2 4.2 0 0 0-6-6L11.4 6"/><path d="M14 10.6a4.2 4.2 0 0 0-6 0L5.2 13.4a4.2 4.2 0 0 0 6 6L12.6 18"/>',
+ "medal":'<circle cx="12" cy="15.2" r="5.8"/><path d="M8.4 9.6L5 2.4h5.2l2 4"/><path d="M15.6 9.6L19 2.4h-5.2l-2 4"/>',
+ "ban":'<circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>',
+ "scissors":'<circle cx="6.2" cy="18" r="2.5"/><circle cx="6.2" cy="6" r="2.5"/><line x1="8.4" y1="7.4" x2="20" y2="19"/><line x1="8.4" y1="16.6" x2="20" y2="5"/>',
+ "equals":'<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>',
+ "square-big":'<rect x="2.6" y="2.6" width="18.8" height="18.8" rx="2.4"/>',
+ "square-small":'<rect x="8" y="8" width="8" height="8" rx="1.6"/>'
+};
+
+/* ------------------------------------------------------------ 2. art tiles */
+const CAT_STYLE = {
+  "function words": [222, 18], "verbs": [255, 26], "family & people": [340, 24],
+  "pronouns": [268, 22], "adjectives": [ 28, 30], "places": [200, 26],
+  "nature": [140, 26], "food & drink": [ 14, 30], "body": [352, 22],
+  "question words": [188, 28], "numbers": [ 48, 30], "colors": [305, 26],
+  "animals": [ 96, 26], "time & dates": [ 42, 24], "transport": [212, 28],
+  "objects": [ 172, 22], "abstract": [ 250, 20]
+};
+function catVars(cat){
+  const s = CAT_STYLE[cat] || [220, 18], h = s[0], sat = s[1];
+  return "--tint:hsl(" + h + " " + sat + "% 22%);" +
+         "--edge:hsl(" + h + " " + sat + "% 34%);" +
+         "--ink:hsl(" + h + " " + Math.min(95, sat + 55) + "% 86%);" +
+         "--badge:hsl(" + h + " " + sat + "% 15%);";
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+function glyphHTML(icon, mod){
+  const base = PRIMS[icon] || PRIMS.box;
+  let h = '<span class="glyphwrap"><svg viewBox="0 0 24 24" aria-hidden="true">' + base + '</svg>';
+  if (mod && PRIMS[mod]) h += '<svg class="mod" viewBox="0 0 24 24" aria-hidden="true">' + PRIMS[mod] + '</svg>';
+  return h + '</span>';
+}
+/* Renders any art type. Unknown/missing art still produces a readable tile. */
+function tileHTML(w, cls){
+  const a = w.art || {};
+  let inner;
+  if (a.type === "emoji" && a.char)      inner = '<span class="emoji">' + esc(a.char) + '</span>';
+  else if (a.type === "glyph" && a.icon) inner = glyphHTML(a.icon, a.mod);
+  else if (a.type === "text" && a.gloss) inner = '<span class="gloss">' + esc(a.gloss) + '</span>';
+  else                                   inner = '<span class="gloss">' + esc(w.english) + '</span>';
+  const kind = (a.type === "emoji" || a.type === "glyph" || a.type === "text") ? a.type : "text";
+  return '<div class="tile tile-' + kind + " " + (cls || "") + '" style="' + catVars(w.category) + '" role="img" aria-label="' +
+         esc(w.english) + '">' + inner + '</div>';
+}
+/* Two words with the same signature would make a picture question unanswerable. */
+function artSig(w){
+  const a = w.art || {};
+  if (a.type === "emoji") return "e:" + a.char;
+  if (a.type === "glyph") return "g:" + a.icon + "+" + (a.mod || "");
+  if (a.type === "text")  return "t:" + a.gloss;
+  return "x:" + w.rank;
+}
+
+/* --------------------------------------------------------------- 3. tones */
+const TONE_BY_MARK = { "̀":"low", "́":"high", "̂":"falling", "̌":"rising" };
+const SYL_RE = /(?:kh|ch|th|ph|ng|[bcdfhjklmnprstwy])*[aeioù́̂̌]+(?:(?:ng|[bdklmnpt])(?![aeiou]))?/g;
+/* Splits a romanisation into syllables and reads each syllable's tone off its
+   diacritic (no mark = mid). Works on NFD so pre-composed vowels are fine. */
+function syllables(roman){
+  const out = [];
+  String(roman).toLowerCase().normalize("NFD").split(/[\s-]+/).forEach(function(part){
+    if (!part) return;
+    const m = part.match(SYL_RE);
+    if (m) m.forEach(function(s){ out.push(s); });
+    else out.push(part);
+  });
+  return out.length ? out : [String(roman)];
+}
+function toneOf(syl){
+  for (let i = 0; i < syl.length; i++) if (TONE_BY_MARK[syl[i]]) return TONE_BY_MARK[syl[i]];
+  return "mid";
+}
+function tonesOf(roman){ return syllables(roman).map(toneOf); }
+function tonePattern(roman){ return tonesOf(roman).join("."); }
+/* Romanisation with one <span> per syllable, each carrying its tone tooltip. */
+function romanHTML(roman){
+  const sy = syllables(roman), tn = sy.map(toneOf);
+  return sy.map(function(s, i){
+    return '<span class="syl" title="' + tn[i] + ' tone">' + esc(s.normalize("NFC")) + '</span>';
+  }).join("");
+}
+function toneLabel(roman){ return tonesOf(roman).join(" · ") + " tone"; }
+/* Typing answers are compared case- and diacritic-insensitively. */
+function normAnswer(s){
+  return String(s).toLowerCase().normalize("NFD")
+    .replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
+}
+</script>
+<script>
+"use strict";
+/* --------------------------------------------------------------- 4. state */
+const STORAGE_KEY = "thai-vocab-500-v1";
+const MASTER_BOX  = 5;
+/* Review interval for boxes 1..5: 10 min, 1 hr, 1 day, 3 days, 1 week.
+   Box 0 is always due. */
+const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+const BOX_INTERVAL = [0, 10 * MIN, HOUR, DAY, 3 * DAY, 7 * DAY];
+const UNLOCK_RATIO = 0.8;
+const IDLE_MS = 60000;
+
+const byRank = {};
+WORDS.forEach(function(w){ byRank[w.rank] = w; });
+
+let storageOK = true;
+function freshState(){
+  return { v:1, score:0, streak:0, bestStreak:0, totalMs:0, sessions:0,
+           attempts:0, correct:0, firstTry:0, hinted:0,
+           createdAt: Date.now(), updatedAt: Date.now(), words:{} };
+}
+function sanitise(raw){
+  const s = freshState();
+  if (!raw || typeof raw !== "object") return s;
+  ["score","streak","bestStreak","totalMs","sessions","attempts","correct","firstTry","hinted","createdAt"]
+    .forEach(function(k){ if (typeof raw[k] === "number" && isFinite(raw[k]) && raw[k] >= 0) s[k] = raw[k]; });
+  if (raw.words && typeof raw.words === "object"){
+    Object.keys(raw.words).forEach(function(k){
+      const r = parseInt(k, 10), e = raw.words[k];
+      if (!byRank[r] || !e || typeof e !== "object") return;
+      s.words[r] = {
+        b: Math.max(0, Math.min(MASTER_BOX, e.b | 0)),
+        due: typeof e.due === "number" ? e.due : 0,
+        seen: Math.max(0, e.seen | 0),
+        right: Math.max(0, e.right | 0),
+        wrong: Math.max(0, e.wrong | 0)
+      };
+    });
+  }
+  s.score = Math.max(0, Math.round(s.score));
+  return s;
+}
+let state = freshState();
+function load(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    state = sanitise(raw ? JSON.parse(raw) : null);
+  } catch (e) {
+    storageOK = false;
+    state = freshState();
+  }
+}
+let saveTimer = null;
+function saveNow(){
+  saveTimer = null;
+  state.updatedAt = Date.now();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch (e) { if (storageOK){ storageOK = false; showStoreWarn(); } }
+}
+function save(){ if (saveTimer === null) saveTimer = setTimeout(saveNow, 800); }
+function showStoreWarn(){ const el = document.getElementById("storeWarn"); if (el) el.style.display = "block"; }
+
+function rec(rank){
+  let r = state.words[rank];
+  if (!r){ r = state.words[rank] = { b:0, due:0, seen:0, right:0, wrong:0 }; }
+  return r;
+}
+function boxOf(rank){ const r = state.words[rank]; return r ? r.b : 0; }
+function isMastered(rank){ return boxOf(rank) >= MASTER_BOX; }
+function isSeen(rank){ const r = state.words[rank]; return !!r && r.seen > 0; }
+function isDue(rank, now){
+  const r = state.words[rank];
+  if (!r || r.seen === 0 || r.b === 0) return true;
+  return (now || Date.now()) >= r.due;
+}
+function masteredCount(){
+  let n = 0;
+  for (const k in state.words) if (state.words[k].b >= MASTER_BOX) n++;
+  return n;
+}
+
+/* ---------------------------------------------------------- 5. scheduling */
+function unitWords(u){ return WORDS.slice(u * UNIT_SIZE, (u + 1) * UNIT_SIZE); }
+function unitMastered(u){
+  return unitWords(u).reduce(function(n, w){ return n + (isMastered(w.rank) ? 1 : 0); }, 0);
+}
+function unitSeen(u){
+  return unitWords(u).reduce(function(n, w){ return n + (isSeen(w.rank) ? 1 : 0); }, 0);
+}
+const UNLOCK_NEEDED = Math.ceil(UNIT_SIZE * UNLOCK_RATIO);   /* 20 of 25 */
+function unitUnlocked(u){ return u === 0 || unitMastered(u - 1) >= UNLOCK_NEEDED; }
+function highestUnlocked(){
+  let u = 0;
+  while (u + 1 < UNIT_COUNT && unitUnlocked(u + 1)) u++;
+  return u;
+}
+function learnedWords(){ return WORDS.filter(function(w){ return isSeen(w.rank); }); }
+
+/* scope = which words the modes draw from */
+let scope = { type:"unit", unit:0 };
+function scopeWords(){
+  if (scope.type === "free"){
+    const ws = learnedWords();
+    return ws.length ? ws : unitWords(0);
+  }
+  return unitWords(scope.unit);
+}
+function scopeName(){
+  return scope.type === "free" ? "Free review" : ("Unit " + (scope.unit + 1));
+}
+function dueWords(pool, now){
+  now = now || Date.now();
+  return pool.filter(function(w){ return isDue(w.rank, now); });
+}
+function nextDueAt(pool){
+  let t = Infinity;
+  pool.forEach(function(w){
+    const r = state.words[w.rank];
+    if (r && r.seen > 0 && r.b > 0 && r.due < t) t = r.due;
+  });
+  return t;
+}
+let lastServed = -1;
+/* Unseen words first (so a unit introduces itself), then the lowest box,
+   then the word that has been due the longest. */
+function pickWord(pool){
+  const now = Date.now();
+  let due = dueWords(pool, now);
+  if (!due.length) return null;
+  if (due.length > 1){
+    const fresh = due.filter(function(w){ return w.rank !== lastServed; });
+    if (fresh.length) due = fresh;                        /* never twice in a row */
+  }
+  due.sort(function(a, b){
+    const ra = state.words[a.rank], rb = state.words[b.rank];
+    const sa = ra ? ra.seen : 0, sb = rb ? rb.seen : 0;
+    if (!sa !== !sb) return sa ? 1 : -1;                 /* unseen first */
+    const ba = ra ? ra.b : 0, bb = rb ? rb.b : 0;
+    if (ba !== bb) return ba - bb;                        /* weakest first */
+    const da = ra ? ra.due : 0, db = rb ? rb.due : 0;
+    if (da !== db) return da - db;                        /* longest overdue */
+    return a.rank - b.rank;
+  });
+  const head = due.slice(0, Math.min(4, due.length));
+  const w = head[Math.floor(Math.random() * head.length)];
+  lastServed = w.rank;
+  return w;
+}
+
+/* -------- answer handling: every path lands here -------- */
+function promote(rank){
+  const r = rec(rank);
+  r.b = Math.min(MASTER_BOX, r.b + 1);
+  r.due = Date.now() + BOX_INTERVAL[r.b];
+}
+function demote(rank){
+  const r = rec(rank);
+  r.b = 0;
+  r.due = 0;
+}
+function award(points){
+  const mult = state.streak >= 5 ? 1.5 : 1;
+  state.score = Math.max(0, state.score + Math.round(points * mult));
+}
+/* correct: true/false · hinted: whether a hint was used before answering */
+function answer(rank, correct, hinted){
+  const r = rec(rank);
+  r.seen++;
+  state.attempts++;
+  if (correct){
+    state.correct++;
+    if (hinted) state.hinted++; else state.firstTry++;
+    r.right++;
+    state.streak++;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    award(hinted ? 5 : 10);
+    promote(rank);
+  } else {
+    r.wrong++;
+    state.streak = 0;
+    award(0);
+    demote(rank);
+  }
+  touch();
+  save();
+  renderHUD();
+}
+
+/* ------------------------------------------------------- 6. HUD and timer */
+function pad2(n){ return (n < 10 ? "0" : "") + n; }
+function mmss(ms){
+  const s = Math.floor(ms / 1000);
+  return pad2(Math.floor(s / 60)) + ":" + pad2(s % 60);
+}
+function hhmmss(ms){
+  const s = Math.floor(ms / 1000);
+  return pad2(Math.floor(s / 3600)) + ":" + pad2(Math.floor(s / 60) % 60) + ":" + pad2(s % 60);
+}
+let sessionMs = 0, lastTick = Date.now(), lastActivity = Date.now(), timerPaused = false;
+function touch(){ lastActivity = Date.now(); }
+["pointerdown","keydown","touchstart","wheel"].forEach(function(ev){
+  window.addEventListener(ev, touch, { passive:true });
+});
+function tick(){
+  const now = Date.now(), dt = now - lastTick;
+  lastTick = now;
+  const idle = (now - lastActivity) > IDLE_MS;
+  const paused = document.hidden || idle;
+  if (!paused && dt > 0 && dt < 5000){      /* 5s guard: device sleep / tab freeze */
+    sessionMs += dt;
+    state.totalMs += dt;
+    save();
+  }
+  if (paused !== timerPaused){ timerPaused = paused; }
+  renderHUD();
+}
+document.addEventListener("visibilitychange", function(){
+  lastTick = Date.now();                     /* never bank hidden time */
+  if (!document.hidden) touch();
+  renderHUD();
+});
+window.addEventListener("beforeunload", function(){ if (saveTimer) clearTimeout(saveTimer); saveNow(); });
+window.addEventListener("pagehide", function(){ if (saveTimer) clearTimeout(saveTimer); saveNow(); });
+
+function renderHUD(){
+  const m = masteredCount();
+  document.getElementById("hScore").textContent    = state.score.toLocaleString();
+  document.getElementById("hMastered").textContent = m + " / " + WORDS.length;
+  document.getElementById("hStreak").textContent   = state.streak;
+  document.getElementById("hSess").textContent     = mmss(sessionMs);
+  document.getElementById("hTotal").textContent    = hhmmss(state.totalMs);
+  document.getElementById("hStreakBox").classList.toggle("hot", state.streak >= 5);
+  const sb = document.getElementById("hSessBox");
+  sb.classList.toggle("paused", timerPaused);
+  sb.querySelector("span").textContent = timerPaused ? "Paused" : "Session";
+}
+</script>
+<script>
+"use strict";
+/* --------------------------------------------------------------- 7. views */
+const $  = function(s, r){ return (r || document).querySelector(s); };
+const $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+/* -- speech: silently degrades when no Thai voice (or no engine) exists -- */
+let thaiVoice = null;
+const speechOK = (typeof window.speechSynthesis !== "undefined") &&
+                 (typeof window.SpeechSynthesisUtterance !== "undefined");
+function refreshVoices(){
+  if (!speechOK) return;
+  try {
+    const vs = window.speechSynthesis.getVoices() || [];
+    thaiVoice = vs.filter(function(v){ return /^th(-|_|$)/i.test(v.lang || ""); })[0] || null;
+  } catch (e) { thaiVoice = null; }
+}
+if (speechOK){
+  refreshVoices();
+  try { window.speechSynthesis.onvoiceschanged = refreshVoices; } catch (e) {}
+}
+function speak(text){
+  if (!speechOK) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "th-TH";
+    if (thaiVoice) u.voice = thaiVoice;
+    u.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* no voice, no noise */ }
+}
+function spkHTML(thai){
+  return '<button class="spk" data-speak="' + esc(thai) + '" ' + (speechOK ? "" : "disabled ") +
+         'aria-label="Play Thai audio" title="' + (speechOK ? "Listen (Thai)" : "No speech voice available") +
+         '">&#128266;</button>';
+}
+document.addEventListener("click", function(e){
+  const b = e.target.closest ? e.target.closest("[data-speak]") : null;
+  if (b) speak(b.getAttribute("data-speak"));
+});
+
+/* ------------------------------ shared bits ------------------------------ */
+function barHTML(done, total){
+  const pct = total ? Math.round(done / total * 100) : 0;
+  return '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+}
+function scopeBarHTML(){
+  const pool = scopeWords(), due = dueWords(pool).length;
+  const mast = pool.filter(function(w){ return isMastered(w.rank); }).length;
+  return '<div class="scopebar">' +
+    '<span class="pill on">' + esc(scopeName()) + '</span>' +
+    '<span class="tiny">mastered ' + mast + '/' + pool.length + '</span>' +
+    '<span class="tiny">&middot; due now ' + due + '</span>' +
+    '<button class="btn ghost" data-goto="units" style="margin-left:auto">Change</button>' +
+    '</div>' + barHTML(mast, pool.length);
+}
+function caughtUpHTML(){
+  const pool = scopeWords(), t = nextDueAt(pool);
+  let when = "later";
+  if (t !== Infinity){
+    const d = Math.max(0, t - Date.now());
+    when = d < HOUR ? ("in " + Math.max(1, Math.round(d / MIN)) + " min")
+         : d < DAY  ? ("in " + Math.round(d / HOUR) + " h")
+         : ("in " + Math.round(d / DAY) + " days");
+  }
+  const nxt = scope.type === "unit" && scope.unit + 1 < UNIT_COUNT && unitUnlocked(scope.unit + 1);
+  return '<div class="panel empty"><div class="big">&#9749;</div>' +
+    '<h2 style="margin-top:4px">Nothing due in ' + esc(scopeName()) + '</h2>' +
+    '<p class="muted tiny">Spaced repetition is holding these words back. Next review ' + when + '.</p>' +
+    '<div class="row center" style="margin-top:12px">' +
+      (nxt ? '<button class="btn primary" data-unit="' + (scope.unit + 1) + '">Start Unit ' + (scope.unit + 2) + '</button>' : "") +
+      '<button class="btn" data-free="1">Free review</button>' +
+      '<button class="btn ghost" data-goto="units">All units</button>' +
+    '</div></div>';
+}
+function verdictHTML(){ return '<div class="verdict" id="verdict"></div>'; }
+function showVerdict(host, good, word, extraHTML){
+  const v = host ? host.querySelector(".verdict") : null;
+  if (!v) return;
+  v.className = "verdict on " + (good ? "good" : "bad");
+  v.innerHTML = good
+    ? "&#10003; Correct"
+    : '&#10007; Not quite<span class="ans">' + esc(word.thai) + '</span>' +
+      '<span class="ansr">' + esc(word.roman) + " &mdash; " + esc(word.english) + '</span>' + (extraHTML || "");
+}
+function flash(el, good){
+  if (!el) return;
+  el.classList.remove("flash-good", "flash-bad");
+  void el.offsetWidth;
+  el.classList.add(good ? "flash-good" : "flash-bad");
+}
+function shuffle(a){
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+/* Distractors: same category first, then closest by tone pattern and length.
+   Never two options that render the same tile. */
+function pickDistractors(word, n){
+  const sig = artSig(word), tp = tonePattern(word.roman), len = word.roman.length;
+  function rank(w){
+    let d = 0;
+    if (tonePattern(w.roman) !== tp) d += 2;
+    if (w.pos !== word.pos) d += 1;
+    d += Math.min(4, Math.abs(w.roman.length - len) * 0.5);
+    return d;
+  }
+  function gather(list){
+    const seen = {};
+    seen[sig] = 1;
+    return list.filter(function(w){
+      if (w.rank === word.rank) return false;
+      const s = artSig(w);
+      if (seen[s]) return false;
+      seen[s] = 1;
+      return true;
+    });
+  }
+  const same = gather(WORDS.filter(function(w){ return w.category === word.category; }));
+  same.sort(function(a, b){ return rank(a) - rank(b); });
+  let picked = shuffle(same.slice(0, Math.max(n, Math.min(same.length, n * 3)))).slice(0, n);
+  if (picked.length < n){
+    const used = {};
+    used[sig] = 1;
+    picked.forEach(function(w){ used[artSig(w)] = 1; });
+    const rest = shuffle(WORDS.filter(function(w){
+      if (w.rank === word.rank) return false;
+      const s = artSig(w);
+      if (used[s]) return false;
+      used[s] = 1;
+      return true;
+    }));
+    picked = picked.concat(rest.slice(0, n - picked.length));
+  }
+  return picked;
+}
+
+/* ------------------------------ view switching --------------------------- */
+let activeView = "learn";
+const RENDER = {};
+function setView(v){
+  activeView = v;
+  $$(".tab").forEach(function(t){ t.setAttribute("aria-selected", String(t.dataset.view === v)); });
+  $$(".view").forEach(function(s){ s.classList.toggle("on", s.id === "v-" + v); });
+  if (RENDER[v]) RENDER[v]();
+  window.scrollTo(0, 0);
+}
+$$(".tab").forEach(function(t){
+  t.addEventListener("click", function(){ setView(t.dataset.view); });
+});
+document.addEventListener("click", function(e){
+  const g = e.target.closest ? e.target.closest("[data-goto]") : null;
+  if (g){ setView(g.getAttribute("data-goto")); return; }
+  const f = e.target.closest ? e.target.closest("[data-free]") : null;
+  if (f){ scope = { type:"free" }; refreshAll(); return; }
+  const u = e.target.closest ? e.target.closest("[data-unit]") : null;
+  if (u && !u.disabled){
+    const n = parseInt(u.getAttribute("data-unit"), 10);
+    if (unitUnlocked(n)){ scope = { type:"unit", unit:n }; refreshAll(); }
+  }
+});
+function refreshAll(){
+  if (RENDER.units) RENDER.units();
+  if (RENDER[activeView]) RENDER[activeView]();
+  renderHUD();
+}
+
+/* -------------------------------- units ---------------------------------- */
+RENDER.units = function(){
+  const grid = $("#unitGrid");
+  if (!grid) return;
+  let h = "";
+  for (let u = 0; u < UNIT_COUNT; u++){
+    const ws = unitWords(u), m = unitMastered(u), seen = unitSeen(u);
+    const open = unitUnlocked(u), done = m === ws.length;
+    const cur = scope.type === "unit" && scope.unit === u;
+    const lo = ws[0].rank, hi = ws[ws.length - 1].rank;
+    h += '<button class="unit' + (open ? "" : " locked") + (cur ? " cur" : "") + (done ? " done" : "") + '" ' +
+         (open ? 'data-unit="' + u + '"' : 'disabled aria-disabled="true"') + '>' +
+         '<span class="ut">Unit ' + (u + 1) + '<span>' + (done ? "&#10003;" : open ? "" : "&#128274;") + '</span></span>' +
+         '<span class="ur">ranks ' + lo + "–" + hi + " &middot; " +
+           (open ? ("seen " + seen + "/25") : ("needs " + UNLOCK_NEEDED + " mastered in Unit " + u)) + '</span>' +
+         barHTML(m, ws.length) +
+         '<span class="ur" style="margin:6px 0 0">mastered ' + m + "/" + ws.length + '</span>' +
+         '</button>';
+  }
+  grid.innerHTML = h;
+  $("#scopeLabel").textContent = scopeName();
+};
+$("#freeReviewBtn").addEventListener("click", function(){ scope = { type:"free" }; refreshAll(); });
+</script>
+<script>
+"use strict";
+/* --------------------------------------------------------------- 8. modes */
+const ADVANCE_MS = 850;
+let advanceTimer = null;
+function later(fn){
+  if (advanceTimer) clearTimeout(advanceTimer);
+  advanceTimer = setTimeout(function(){ advanceTimer = null; fn(); }, ADVANCE_MS);
+}
+function masterClass(w){ return isMastered(w.rank) ? " mastered" : ""; }
+function badgeHTML(){ return '<span class="badge-master" title="Mastered">&#10003;</span>'; }
+function metaHTML(w){
+  return '<div class="meta">' + esc(w.pos) + " &middot; " + esc(w.category) +
+         " &middot; rank " + w.rank + " &middot; box " + boxOf(w.rank) + "/5</div>";
+}
+
+/* ============================== 1. LEARN ================================= */
+const learn = { w:null, flipped:false, hinted:false };
+RENDER.learn = function(){
+  const host = $("#v-learn");
+  const pool = scopeWords();
+  const w = (learn.w && dueWords(pool).some(function(x){ return x.rank === learn.w.rank; })) ? learn.w : pickWord(pool);
+  if (!w){ learn.w = null; host.innerHTML = scopeBarHTML() + caughtUpHTML(); return; }
+  if (w !== learn.w){ learn.w = w; learn.flipped = false; learn.hinted = false; }
+  drawLearn();
+};
+function drawLearn(){
+  const host = $("#v-learn"), w = learn.w;
+  host.innerHTML = scopeBarHTML() +
+    '<div class="card' + masterClass(w) + '" id="learnCard">' + badgeHTML() +
+      '<div class="cardtile">' + tileHTML(w, "big") + '</div>' +
+      '<div class="thai">' + esc(w.thai) + '</div>' +
+      '<div class="roman" title="' + esc(toneLabel(w.roman)) + '">' + romanHTML(w.roman) + '</div>' +
+      '<div class="tones">' + esc(toneLabel(w.roman)) + '</div>' +
+      (learn.flipped
+        ? '<div class="eng" style="margin-top:10px">' + esc(w.english) + '</div>' + metaHTML(w)
+        : '<div class="eng" style="margin-top:10px;color:var(--dimmer)">' +
+            (learn.hinted ? esc(hintOf(w.english)) : "&middot; &middot; &middot;") + '</div>') +
+      '<div style="margin-top:10px">' + spkHTML(w.thai) + '</div>' +
+    '</div>' +
+    '<div class="row center" style="margin-top:14px">' +
+      (learn.flipped
+        ? '<button class="btn no" id="lNo">Didn\'t know</button><button class="btn ok" id="lYes">Knew it</button>'
+        : '<button class="btn" id="lHint"' + (learn.hinted ? " disabled" : "") + '>Hint</button>' +
+          '<button class="btn primary" id="lFlip">Flip &#8635;</button>') +
+    '</div>' +
+    '<p class="tiny muted" style="text-align:center;margin-top:12px">' +
+      'Knew it: +' + (learn.hinted ? 5 : 10) + ' and the word moves up a Leitner box.</p>';
+
+  if (!learn.flipped){
+    host.querySelector("#lFlip").addEventListener("click", function(){ learn.flipped = true; drawLearn(); });
+    host.querySelector("#lHint").addEventListener("click", function(){ learn.hinted = true; drawLearn(); });
+    host.querySelector("#learnCard").addEventListener("click", function(e){
+      if (!e.target.closest("[data-speak]")){ learn.flipped = true; drawLearn(); }
+    });
+  } else {
+    host.querySelector("#lYes").addEventListener("click", function(){ finishLearn(true); });
+    host.querySelector("#lNo").addEventListener("click",  function(){ finishLearn(false); });
+  }
+}
+function hintOf(english){
+  return english.split(/\s+/).map(function(word){
+    if (word.length <= 2) return word;
+    return word[0] + word.slice(1).replace(/[a-zA-Z]/g, "·");
+  }).join(" ");
+}
+function finishLearn(good){
+  const w = learn.w;
+  answer(w.rank, good, learn.hinted);
+  flash($("#v-learn #learnCard"), good);
+  if (!good) showVerdictInline(w);
+  learn.w = null;
+  later(function(){ if (activeView === "learn") RENDER.learn(); });
+}
+function showVerdictInline(w){
+  const card = $("#v-learn #learnCard");
+  if (!card) return;
+  const p = document.createElement("div");
+  p.className = "verdict on bad";
+  p.innerHTML = "Back to box 0 &mdash; you'll see it again soon";
+  card.appendChild(p);
+}
+
+/* ================== 2/3. MULTIPLE CHOICE (match & reverse) =============== */
+const mc = { match:null, reverse:null };
+function mcState(mode){ return mc[mode]; }
+function newMC(mode){
+  const pool = scopeWords(), w = pickWord(pool);
+  if (!w) return null;
+  const ds = pickDistractors(w, 3);
+  const opts = shuffle([w].concat(ds));
+  return { w:w, opts:opts, answered:false, hinted:false, mode:mode };
+}
+function renderMC(mode){
+  const host = $("#v-" + mode);
+  let s = mcState(mode);
+  if (!s || s.done){ s = mc[mode] = newMC(mode); }
+  if (!s){ host.innerHTML = scopeBarHTML() + caughtUpHTML(); return; }
+  const w = s.w;
+  const prompt = mode === "match"
+    ? '<div class="card' + masterClass(w) + '" id="mcCard">' + badgeHTML() +
+        '<div class="thai">' + esc(w.thai) + '</div>' +
+        '<div class="roman" title="' + esc(toneLabel(w.roman)) + '">' + romanHTML(w.roman) + '</div>' +
+        '<div class="tones">' + esc(toneLabel(w.roman)) + '</div>' +
+        '<div style="margin-top:8px">' + spkHTML(w.thai) + '</div>' +
+        '<p class="tiny muted" style="margin:8px 0 0">Which picture is it?</p>' +
+      '</div>'
+    : '<div class="card' + masterClass(w) + '" id="mcCard">' + badgeHTML() +
+        '<div class="cardtile">' + tileHTML(w, "big") + '</div>' +
+        '<p class="tiny muted" style="margin:6px 0 0">Which Thai word is this?</p>' +
+      '</div>';
+  const opts = s.opts.map(function(o, i){
+    return mode === "match"
+      ? '<button class="opt" data-i="' + i + '">' + tileHTML(o, "sm") + '</button>'
+      : '<button class="opt text" data-i="' + i + '"><span class="othai">' + esc(o.thai) + '</span>' +
+        '<span class="oroman">' + esc(o.roman) + '</span></button>';
+  }).join("");
+  host.innerHTML = scopeBarHTML() + prompt +
+    '<div class="opts" id="mcOpts">' + opts + '</div>' + verdictHTML() +
+    '<div class="row center" style="margin-top:14px">' +
+      '<button class="btn" id="mcHint"' + (s.hinted || s.answered ? " disabled" : "") + '>Hint (&minus;5)</button>' +
+      '<button class="btn primary" id="mcNext"' + (s.answered ? "" : " disabled") + '>Next &rarr;</button>' +
+    '</div>';
+
+  const q = function(sel){ return host.querySelector(sel); };
+  if (s.answered) paintMC(mode);
+  q("#mcOpts").addEventListener("click", function(e){
+    const b = e.target.closest(".opt");
+    if (!b || s.answered) return;
+    answerMC(mode, parseInt(b.dataset.i, 10));
+  });
+  q("#mcHint").addEventListener("click", function(){
+    if (s.answered || s.hinted) return;
+    s.hinted = true;
+    const wrong = shuffle(s.opts.map(function(o, i){ return i; })
+      .filter(function(i){ return s.opts[i].rank !== s.w.rank; })).slice(0, 2);
+    wrong.forEach(function(i){ q('.opt[data-i="' + i + '"]').classList.add("out"); });
+    q("#mcHint").disabled = true;
+  });
+  q("#mcNext").addEventListener("click", function(){
+    if (!s.answered) return;
+    mc[mode] = null;
+    renderMC(mode);
+  });
+}
+function paintMC(mode){
+  const s = mcState(mode), host = $("#v-" + mode);
+  s.opts.forEach(function(o, i){
+    const el = host.querySelector('.opt[data-i="' + i + '"]');
+    if (!el) return;
+    el.disabled = true;
+    if (o.rank === s.w.rank) el.classList.add("right");
+    else if (i === s.picked) el.classList.add("wrongpick");
+  });
+}
+function answerMC(mode, i){
+  const s = mcState(mode), host = $("#v-" + mode);
+  s.answered = true;
+  s.picked = i;
+  const good = s.opts[i].rank === s.w.rank;
+  answer(s.w.rank, good, s.hinted);
+  paintMC(mode);
+  flash(host.querySelector("#mcCard"), good);
+  showVerdict(host, good, s.w);
+  host.querySelector("#mcHint").disabled = true;
+  host.querySelector("#mcNext").disabled = false;
+  if (good){
+    later(function(){
+      if (activeView === mode){ mc[mode] = null; renderMC(mode); }
+    });
+  }
+}
+RENDER.match   = function(){ renderMC("match"); };
+RENDER.reverse = function(){ renderMC("reverse"); };
+
+/* ============================== 4. TYPING ================================ */
+let typ = null;
+RENDER.typing = function(){
+  const host = $("#v-typing");
+  if (!typ || typ.done){
+    const w = pickWord(scopeWords());
+    typ = w ? { w:w, hinted:false, answered:false } : null;
+  }
+  if (!typ){ host.innerHTML = scopeBarHTML() + caughtUpHTML(); return; }
+  const w = typ.w;
+  host.innerHTML = scopeBarHTML() +
+    '<div class="card' + masterClass(w) + '" id="tCard">' + badgeHTML() +
+      '<div class="cardtile">' + tileHTML(w, "big") + '</div>' +
+      '<div class="eng">' + esc(w.english) + '</div>' +
+      '<div class="meta">' + esc(w.pos) + " &middot; " + esc(w.category) + " &middot; " +
+        syllables(w.roman).length + ' syllable' + (syllables(w.roman).length > 1 ? "s" : "") + '</div>' +
+      '<div style="margin-top:10px">' + spkHTML(w.thai) + '</div>' +
+      '<div style="margin-top:12px;width:100%;display:flex;justify-content:center">' +
+        '<input class="tinput" id="tIn" autocomplete="off" autocapitalize="off" autocorrect="off" ' +
+        'spellcheck="false" inputmode="latin" placeholder="type the romanisation" ' +
+        (typ.answered ? "disabled " : "") + 'value="' + esc(typ.value || "") + '">' +
+      '</div>' +
+      '<p class="tiny muted" style="margin:8px 0 0">Tone marks optional &mdash; "' +
+        esc(normAnswer(w.roman)) + '" is accepted.</p>' +
+    '</div>' + verdictHTML() +
+    '<div class="row center" style="margin-top:14px">' +
+      '<button class="btn" id="tHint"' + (typ.hinted || typ.answered ? " disabled" : "") + '>Hint (&minus;5)</button>' +
+      (typ.answered ? '<button class="btn primary" id="tNext">Next &rarr;</button>'
+                    : '<button class="btn primary" id="tGo">Check</button>') +
+    '</div>' +
+    (typ.hinted && !typ.answered
+      ? '<p class="tiny" style="text-align:center;color:var(--accent);margin-top:10px">starts with &ldquo;' +
+        esc(normAnswer(w.roman).slice(0, 2)) + '&rdquo; &middot; ' + esc(toneLabel(w.roman)) + '</p>' : "");
+
+  const inp = host.querySelector("#tIn");
+  if (typ.answered){
+    showVerdict(host, typ.good, w);
+    host.querySelector("#tNext").addEventListener("click", function(){ typ = null; RENDER.typing(); });
+  } else {
+    inp.addEventListener("input", function(){ typ.value = inp.value; });
+    inp.addEventListener("keydown", function(e){ if (e.key === "Enter") checkTyping(); });
+    host.querySelector("#tGo").addEventListener("click", checkTyping);
+    host.querySelector("#tHint").addEventListener("click", function(){
+      typ.hinted = true;
+      RENDER.typing();
+    });
+    inp.focus({ preventScroll:true });
+  }
+};
+function checkTyping(){
+  if (!typ || typ.answered) return;
+  const w = typ.w, given = normAnswer($("#v-typing #tIn").value);
+  if (!given) return;
+  const good = given === normAnswer(w.roman);
+  typ.answered = true;
+  typ.good = good;
+  answer(w.rank, good, typ.hinted);
+  RENDER.typing();
+  flash($("#v-typing #tCard"), good);
+  if (good) later(function(){ if (activeView === "typing"){ typ = null; RENDER.typing(); } });
+}
+</script>
+<script>
+"use strict";
+/* ----------------------------------------------------- 9. stats and data */
+RENDER.stats = function(){
+  const host = $("#v-stats");
+  const now = Date.now();
+  const mast = masteredCount();
+  const acc = state.attempts ? Math.round(state.correct / state.attempts * 100) : 0;
+  const dueNow = WORDS.filter(function(w){ return isSeen(w.rank) && isDue(w.rank, now); }).length;
+  const seen = WORDS.filter(function(w){ return isSeen(w.rank); }).length;
+
+  const byCat = {};
+  CATEGORIES.forEach(function(c){ byCat[c] = { n:0, m:0, s:0 }; });
+  WORDS.forEach(function(w){
+    const c = byCat[w.category] || (byCat[w.category] = { n:0, m:0, s:0 });
+    c.n++;
+    if (isMastered(w.rank)) c.m++;
+    if (isSeen(w.rank)) c.s++;
+  });
+  const boxes = [0, 0, 0, 0, 0, 0];
+  WORDS.forEach(function(w){ boxes[boxOf(w.rank)]++; });
+
+  let h = '<div class="grid2">' +
+    kpi(hhmmss(state.totalMs), "Total time") +
+    kpi(mmss(sessionMs), "This session") +
+    kpi(String(state.sessions), "Sessions") +
+    kpi(acc + "%", "Accuracy") +
+    kpi(String(state.bestStreak), "Longest streak") +
+    kpi(String(dueNow), "Due for review now") +
+    kpi(mast + " / " + WORDS.length, "Mastered") +
+    kpi(seen + " / " + WORDS.length, "Words seen") +
+    '</div>';
+
+  h += "<h3>Leitner boxes</h3><div class=\"panel\">";
+  for (let b = 0; b <= MASTER_BOX; b++){
+    const lab = b === 0 ? "Box 0 &middot; new or missed"
+              : b === MASTER_BOX ? "Box 5 &middot; mastered (1 week)"
+              : "Box " + b + " &middot; " + ["", "10 min", "1 hour", "1 day", "3 days"][b];
+    h += '<div class="barline"><span class="lab">' + lab + '</span>' +
+         '<span class="num">' + boxes[b] + '</span>' + barHTML(boxes[b], WORDS.length) + '</div>';
+  }
+  h += "</div>";
+
+  h += "<h3>Mastery by unit</h3><div class=\"unitdots\">";
+  for (let u = 0; u < UNIT_COUNT; u++){
+    const m = unitMastered(u);
+    h += '<div class="udot"><b>U' + (u + 1) + '</b>' + barHTML(m, UNIT_SIZE) +
+         '<span class="tiny muted">' + m + "/" + UNIT_SIZE + '</span></div>';
+  }
+  h += "</div>";
+
+  h += "<h3>Mastery by category</h3><div class=\"panel\">";
+  Object.keys(byCat).sort(function(a, b){ return byCat[b].n - byCat[a].n; }).forEach(function(c){
+    const o = byCat[c];
+    h += '<div class="barline"><span class="lab">' + esc(c) + '</span>' +
+         '<span class="num">' + o.m + "/" + o.n + '</span>' + barHTML(o.m, o.n) + '</div>';
+  });
+  h += "</div>";
+
+  h += '<h3>Progress data</h3><div class="panel">' +
+    '<p class="tiny muted" style="margin-top:0">Saved in this browser under <code>' + STORAGE_KEY + '</code>. ' +
+    'Export a JSON blob to carry it to another browser or to survive a wipe.</p>' +
+    '<div class="row">' +
+      '<button class="btn primary" id="btnExport">Export progress</button>' +
+      '<button class="btn" id="btnImport">Import progress</button>' +
+      '<button class="btn no" id="btnReset">Reset progress</button>' +
+    '</div><p class="tiny muted" id="dataMsg" style="margin-bottom:0"></p></div>';
+
+  host.innerHTML = h;
+  $("#btnExport").addEventListener("click", doExport);
+  $("#btnImport").addEventListener("click", function(){ $("#importFile").click(); });
+  $("#btnReset").addEventListener("click", doReset);
+};
+function kpi(v, l){ return '<div class="kpi"><b>' + v + "</b><span>" + l + "</span></div>"; }
+function dataMsg(s){ const el = $("#dataMsg"); if (el) el.textContent = s; }
+
+function doExport(){
+  saveNow();
+  const payload = { app:"thai-vocab-500", key:STORAGE_KEY, exportedAt:new Date().toISOString(), state:state };
+  try {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "thai-vocab-500-progress-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    dataMsg("Exported.");
+  } catch (e) { dataMsg("Export failed: " + e.message); }
+}
+$("#importFile").addEventListener("change", function(e){
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = function(){
+    let obj = null;
+    try { obj = JSON.parse(String(fr.result)); }
+    catch (err){ dataMsg("That file isn't valid JSON."); e.target.value = ""; return; }
+    const incoming = obj && obj.state ? obj.state : obj;
+    if (!incoming || typeof incoming !== "object" || !incoming.words){
+      dataMsg("That file doesn't look like a Thai Vocab 500 export.");
+      e.target.value = "";
+      return;
+    }
+    const clean = sanitise(incoming);
+    const n = Object.keys(clean.words).length;
+    if (!window.confirm("Import " + n + " word records and a score of " + clean.score +
+                        "?\n\nThis replaces the progress currently in this browser.")){
+      e.target.value = "";
+      return;
+    }
+    state = clean;
+    sessionMs = 0;
+    saveNow();
+    scope = { type:"unit", unit: highestUnlocked() };
+    learn.w = null; mc.match = null; mc.reverse = null; typ = null;
+    refreshAll();
+    setView("stats");
+    dataMsg("Imported " + n + " word records.");
+  };
+  fr.onerror = function(){ dataMsg("Could not read that file."); };
+  fr.readAsText(f);
+  e.target.value = "";
+});
+function doReset(){
+  if (!window.confirm("Reset all progress?\n\nScore, streaks, timers and all 500 Leitner boxes go back to zero. This cannot be undone.")) return;
+  state = freshState();
+  state.sessions = 1;
+  sessionMs = 0;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  saveNow();
+  scope = { type:"unit", unit:0 };
+  learn.w = null; mc.match = null; mc.reverse = null; typ = null;
+  refreshAll();
+  dataMsg("Progress reset.");
+}
+
+/* ---------------------------------------------------------------- 10. boot */
+(function boot(){
+  load();
+  if (!storageOK) showStoreWarn();
+  state.sessions++;
+  scope = { type:"unit", unit: highestUnlocked() };
+  lastTick = Date.now();
+  touch();
+  saveNow();
+  RENDER.units();
+  setView("learn");
+  renderHUD();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
