@@ -121,6 +121,7 @@ h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;le
   background:var(--bg3);color:var(--fg);font-size:19px;cursor:pointer;
   display:inline-flex;align-items:center;justify-content:center}
 .spk:disabled{opacity:.3}
+.spk.mute{opacity:.45}
 
 /* ---------- quiz ---------- */
 .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
@@ -682,36 +683,105 @@ function renderHUD(){
 const $  = function(s, r){ return (r || document).querySelector(s); };
 const $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
-/* -- speech: silently degrades when no Thai voice (or no engine) exists -- */
-let thaiVoice = null;
+/* -- speech --------------------------------------------------------------
+   "Degrade silently" must not mean "look broken". The API existing says
+   nothing about a usable voice being installed: with no Thai voice the
+   utterance fails asynchronously with synthesis-failed, which a try/catch
+   never sees, so the button used to sit there enabled, claim "Listen (Thai)"
+   and do nothing. We now track whether audio actually started and tell the
+   user once when it cannot.                                              */
+let thaiVoice = null, voicesSeen = false, speechDead = false;
 const speechOK = (typeof window.speechSynthesis !== "undefined") &&
                  (typeof window.SpeechSynthesisUtterance !== "undefined");
 function refreshVoices(){
   if (!speechOK) return;
   try {
     const vs = window.speechSynthesis.getVoices() || [];
+    if (vs.length) voicesSeen = true;
     thaiVoice = vs.filter(function(v){ return /^th(-|_|$)/i.test(v.lang || ""); })[0] || null;
+    if (thaiVoice && speechDead){ speechDead = false; clearSpeechNote(); }
   } catch (e) { thaiVoice = null; }
 }
 if (speechOK){
   refreshVoices();
-  try { window.speechSynthesis.onvoiceschanged = refreshVoices; } catch (e) {}
+  /* Chrome returns an empty list synchronously and fills it later. */
+  try { window.speechSynthesis.addEventListener("voiceschanged", refreshVoices); } catch (e) {
+    try { window.speechSynthesis.onvoiceschanged = refreshVoices; } catch (e2) {}
+  }
 }
+function speechUsable(){ return speechOK && !speechDead; }
+
+function markSpeechDead(){
+  if (speechDead) return;
+  speechDead = true;
+  $$("[data-speak]").forEach(function(b){
+    b.innerHTML = "&#128263;";
+    b.title = "No Thai voice on this device";
+    b.classList.add("mute");
+  });
+  showSpeechNote();
+}
+function clearSpeechNote(){
+  $$("[data-speak]").forEach(function(b){
+    b.innerHTML = "&#128266;";
+    b.title = "Listen (Thai)";
+    b.classList.remove("mute");
+  });
+  const n = $("#speechNote"); if (n) n.remove();
+}
+function showSpeechNote(){
+  if ($("#speechNote")) return;
+  const n = document.createElement("div");
+  n.id = "speechNote";
+  n.className = "notice";
+  n.innerHTML = 'No Thai voice is installed on this device, so playback is silent. ' +
+    'Everything else works &mdash; the romanisation and its tone marks are on every card. ' +
+    '<details style="margin-top:6px"><summary style="cursor:pointer">How to add one</summary>' +
+    '<div style="margin-top:6px;color:var(--dim)">' +
+    '<b>macOS / iOS:</b> Settings &rarr; Accessibility &rarr; Spoken Content &rarr; Voices &rarr; Thai.<br>' +
+    '<b>Windows:</b> Settings &rarr; Time &amp; language &rarr; Language &amp; region &rarr; Add a language &rarr; ' +
+    '\u0e44\u0e17\u0e22 (Thai), including the speech pack, then restart the browser.<br>' +
+    '<b>Android:</b> install Google Text-to-Speech and add the Thai voice data.<br>' +
+    '<b>Linux:</b> install a Thai-capable engine such as espeak-ng.' +
+    '</div></details>';
+  const wrap = $(".wrap");
+  if (wrap) wrap.insertBefore(n, wrap.children[1] || null);
+}
+
 function speak(text){
   if (!speechOK) return;
+  let started = false;
   try {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "th-TH";
-    if (thaiVoice) u.voice = thaiVoice;
+    /* The voice setter rejects anything that is not a real
+       SpeechSynthesisVoice; lang alone is enough, so never let this throw. */
+    if (thaiVoice){ try { u.voice = thaiVoice; } catch (e) {} }
     u.rate = 0.85;
-    window.speechSynthesis.cancel();
+    u.onstart = function(){ started = true; };
+    u.onerror = function(e){
+      const why = e && e.error;
+      /* cancelling the previous utterance is not a failure */
+      if (why === "interrupted" || why === "canceled") return;
+      markSpeechDead();
+    };
+    /* Cancelling in the same tick as speak() drops the utterance on Chrome
+       and iOS, so only cancel when something is actually playing. */
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
-  } catch (e) { /* no voice, no noise */ }
+    /* Some platforms fire no events at all; treat total silence as failure. */
+    setTimeout(function(){
+      if (!started && !window.speechSynthesis.speaking && !window.speechSynthesis.pending) markSpeechDead();
+    }, 1500);
+  } catch (e) { markSpeechDead(); }
 }
 function spkHTML(thai){
-  return '<button class="spk" data-speak="' + esc(thai) + '" ' + (speechOK ? "" : "disabled ") +
-         'aria-label="Play Thai audio" title="' + (speechOK ? "Listen (Thai)" : "No speech voice available") +
-         '">&#128266;</button>';
+  const dead = !speechUsable();
+  return '<button class="spk' + (dead ? " mute" : "") + '" data-speak="' + esc(thai) + '" ' +
+         (speechOK ? "" : "disabled ") + 'aria-label="Play Thai audio" title="' +
+         (!speechOK ? "This browser has no speech engine"
+                    : dead ? "No Thai voice on this device" : "Listen (Thai)") +
+         '">' + (dead ? "&#128263;" : "&#128266;") + '</button>';
 }
 document.addEventListener("click", function(e){
   const b = e.target.closest ? e.target.closest("[data-speak]") : null;
