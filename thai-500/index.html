@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
 <title>Thai Vocab 500</title>
+<!-- Inline so the page still makes zero network requests: without it the
+     browser asks the server for /favicon.ico on every load. -->
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAzMiAzMic+PHJlY3Qgd2lkdGg9JzMyJyBoZWlnaHQ9JzMyJyByeD0nNycgZmlsbD0nIzEyMTQxYScvPjxyZWN0IHg9JzYnIHk9JzYuNScgd2lkdGg9JzIwJyBoZWlnaHQ9JzEyJyByeD0nMycgZmlsbD0nIzdmZDRhOCcvPjxyZWN0IHg9JzYnIHk9JzEzLjUnIHdpZHRoPScyMCcgaGVpZ2h0PScxMicgcng9JzMnIGZpbGw9JyNmZmI0NTQnLz48L3N2Zz4=">
 <style>
 :root{
   --bg:#12141a; --bg2:#1a1d26; --bg3:#232733; --line:#333949;
@@ -81,6 +84,8 @@ h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;le
 .tile::after{content:"";position:absolute;inset:0;
   background:radial-gradient(120% 95% at 50% 0%,rgba(255,255,255,.10),transparent 65%);pointer-events:none}
 .tile .emoji{font-size:var(--es,64px);line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.tile .tw{width:var(--es,64px);height:var(--es,64px);display:block;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
 .tile .gloss{font-size:var(--gs,19px);font-weight:700;text-align:center;padding:8px;
   color:var(--ink,#fff);letter-spacing:.01em;line-height:1.25}
 .glyphwrap{position:relative;width:64%;height:64%;color:var(--ink,#fff)}
@@ -90,6 +95,8 @@ h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;le
 .glyphwrap .mod{left:auto;top:auto;right:-14%;bottom:-12%;width:46%;height:46%;
   background:var(--badge,#12141a);border-radius:50%;padding:11%;stroke-width:2.6;
   box-shadow:0 0 0 2px var(--badge,#12141a)}
+.iconwrap{width:62%;height:62%;color:var(--ink,#fff);display:block}
+.iconwrap svg{width:100%;height:100%;fill:currentColor;stroke:none}
 .tile.big{--es:88px;--gs:26px}
 .tile.sm{--es:40px;--gs:15px}
 .opts .tile{aspect-ratio:4/3}
@@ -235,8 +242,17 @@ h3{font-size:14px;margin:18px 0 8px;color:var(--dim);text-transform:uppercase;le
   <section id="v-stats" class="view"></section>
 </div>
 
+<footer style="max-width:780px;margin:0 auto;padding:18px 12px 28px;text-align:center;
+  font-size:11px;line-height:1.6;color:#6d768c">
+  Emoji artwork from <b>Twemoji</b> v15.1.0 &copy; Twitter, Inc and other contributors,
+  licensed <a href="https://creativecommons.org/licenses/by/4.0/" style="color:#99a1b5">CC-BY 4.0</a>.<br>
+  Icons from <b>Material Symbols</b> &copy; Google, licensed
+  <a href="https://www.apache.org/licenses/LICENSE-2.0" style="color:#99a1b5">Apache&nbsp;2.0</a>.
+</footer>
+
 <input type="file" id="importFile" accept="application/json,.json" style="display:none">
 
+<script src="art.js"></script>
 <script src="words.js"></script>
 <script>
 "use strict";
@@ -345,6 +361,20 @@ function catVars(cat){
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 
+/* Twemoji drawing if art.js supplied one, else the platform's own emoji font. */
+function emojiHTML(char){
+  const lib = (typeof EMOJI_SVG !== "undefined") ? EMOJI_SVG : null;
+  const body = lib ? lib[char] : null;
+  if (body) return '<svg class="tw" viewBox="0 0 36 36" aria-hidden="true">' + body + '</svg>';
+  return '<span class="emoji">' + esc(char) + '</span>';
+}
+/* A purpose-drawn Material Symbol, when art.js carries one. */
+function iconHTML(name){
+  const lib = (typeof ICON_SVG !== "undefined") ? ICON_SVG : null;
+  const body = lib ? lib[name] : null;
+  if (!body) return null;
+  return '<span class="iconwrap"><svg viewBox="0 -960 960 960" aria-hidden="true">' + body + '</svg></span>';
+}
 function glyphHTML(icon, mod){
   const base = PRIMS[icon] || PRIMS.box;
   let h = '<span class="glyphwrap"><svg viewBox="0 0 24 24" aria-hidden="true">' + base + '</svg>';
@@ -355,11 +385,12 @@ function glyphHTML(icon, mod){
 function tileHTML(w, cls){
   const a = w.art || {};
   let inner;
-  if (a.type === "emoji" && a.char)      inner = '<span class="emoji">' + esc(a.char) + '</span>';
+  if (a.type === "emoji" && a.char)      inner = emojiHTML(a.char);
+  else if (a.type === "icon" && a.name)  inner = iconHTML(a.name);
   else if (a.type === "glyph" && a.icon) inner = glyphHTML(a.icon, a.mod);
   else if (a.type === "text" && a.gloss) inner = '<span class="gloss">' + esc(a.gloss) + '</span>';
-  else                                   inner = '<span class="gloss">' + esc(w.english) + '</span>';
-  const kind = (a.type === "emoji" || a.type === "glyph" || a.type === "text") ? a.type : "text";
+  if (!inner)                            inner = '<span class="gloss">' + esc(w.english) + '</span>';
+  const kind = (a.type === "emoji" || a.type === "glyph" || a.type === "icon" || a.type === "text") ? a.type : "text";
   return '<div class="tile tile-' + kind + " " + (cls || "") + '" style="' + catVars(w.category) + '" role="img" aria-label="' +
          esc(w.english) + '">' + inner + '</div>';
 }
@@ -367,6 +398,7 @@ function tileHTML(w, cls){
 function artSig(w){
   const a = w.art || {};
   if (a.type === "emoji") return "e:" + a.char;
+  if (a.type === "icon")  return "i:" + a.name;
   if (a.type === "glyph") return "g:" + a.icon + "+" + (a.mod || "");
   if (a.type === "text")  return "t:" + a.gloss;
   return "x:" + w.rank;
